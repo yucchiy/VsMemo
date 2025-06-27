@@ -71,8 +71,8 @@ export class CreateMemoUseCase {
     const processedTemplate = await this.templateService.processTemplateFromFile(memoType.template, configBasePath, variables);
 
     let fullPath: string;
-    if (processedTemplate.filePath) {
-      fullPath = path.join(workspaceRoot, processedTemplate.filePath);
+    if (processedTemplate.path) {
+      fullPath = path.join(workspaceRoot, processedTemplate.path);
     } else {
       const fileName = `${variables.TITLE}.md`;
       fullPath = path.join(workspaceRoot, config.defaultOutputDir, fileName);

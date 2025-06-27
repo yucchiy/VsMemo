@@ -52,7 +52,7 @@ class MockTemplateService implements ITemplateService {
   async processTemplateFromFile(templateFilePath: string, configBasePath: string, variables: TemplateVariables): Promise<Template> {
     return {
       content: `Processed: ${templateFilePath}`,
-      filePath: `memos/${variables.TITLE}.md`,
+      path: `memos/${variables.TITLE}.md`,
       frontmatter: { title: variables.TITLE }
     };
   }

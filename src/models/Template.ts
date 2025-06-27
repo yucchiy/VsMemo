@@ -1,7 +1,7 @@
 export interface Template {
   frontmatter?: Record<string, any>;
   content: string;
-  filePath: string;
+  path: string;
 }
 
 export interface TemplateVariables {

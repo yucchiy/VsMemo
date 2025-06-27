@@ -18,7 +18,7 @@ export class TemplateService implements ITemplateService {
     const lines = templateContent.split('\n');
     let frontmatter: Record<string, any> | undefined;
     let content = templateContent;
-    let filePath = '';
+    let path = '';
 
     if (lines[0] === '---') {
       const frontmatterEndIndex = lines.slice(1).findIndex(line => line === '---');
@@ -29,9 +29,9 @@ export class TemplateService implements ITemplateService {
         frontmatter = this.parseFrontmatter(frontmatterLines);
         content = contentLines.join('\n').replace(/^\n+/, '');
 
-        if (frontmatter.filePath) {
-          filePath = this.replaceVariables(frontmatter.filePath, variables);
-          delete frontmatter.filePath;
+        if (frontmatter.path) {
+          path = this.replaceVariables(frontmatter.path, variables);
+          delete frontmatter.path;
         }
       }
     }
@@ -45,7 +45,7 @@ export class TemplateService implements ITemplateService {
     return {
       frontmatter,
       content,
-      filePath
+      path
     };
   }
 

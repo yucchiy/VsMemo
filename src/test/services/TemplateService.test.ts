@@ -89,14 +89,14 @@ suite('TemplateService', () => {
 
       assert.strictEqual(result.content, 'Title: Test Memo\nDate: 2025-06-27');
       assert.strictEqual(result.frontmatter, undefined);
-      assert.strictEqual(result.filePath, '');
+      assert.strictEqual(result.path, '');
     });
 
     test('should process template with frontmatter from file', async () => {
       const templateContent = `---
 title: {TITLE}
 date: {DATE}
-filePath: notes/{YEAR}/{MONTH}/{DAY}.md
+path: notes/{YEAR}/{MONTH}/{DAY}.md
 ---
 
 # {TITLE}
@@ -123,7 +123,8 @@ Content here`;
         title: 'Test Memo',
         date: '2025-06-27'
       });
-      assert.strictEqual(result.filePath, 'notes/2025/06/27.md');
+      assert.ok(!('path' in (result.frontmatter || {})), 'path property should be removed from frontmatter');
+      assert.strictEqual(result.path, 'notes/2025/06/27.md');
     });
 
     test('should handle file not found error', async () => {
