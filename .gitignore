@@ -1,0 +1,51 @@
+# Compiled output
+out/
+
+# VS Code test files
+.vscode-test/
+
+# Node modules
+node_modules/
+
+# Package lock files
+package-lock.json
+
+# Logs
+*.log
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+
+# Optional npm cache directory
+.npm
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# dotenv environment variables file
+.env
+
+# VS Code settings (keep only workspace settings)
+.vscode/settings.json
+.vscode/launch.json
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
