@@ -42,6 +42,10 @@ export class CreateMemoUseCase {
   async execute(memoTypeName?: string, title?: string): Promise<void> {
     const config = await this.configService.loadConfig();
 
+    if (!config || !Array.isArray(config.memoTypes) || config.memoTypes.length === 0) {
+      throw new Error('No memo types configured. Please check your .vsmemo/types.json configuration file or workspace setup.');
+    }
+
     let memoType: MemoType;
     if (memoTypeName) {
       const foundType = config.memoTypes.find(type => type.name === memoTypeName);

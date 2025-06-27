@@ -165,4 +165,36 @@ suite('CreateMemoUseCase', () => {
       assert.ok(error.message.includes('not found'));
     }
   });
+
+  test('should throw error when config has no memo types', async () => {
+    const emptyConfig = {
+      memoTypes: [],
+      defaultOutputDir: 'memos'
+    };
+    mockConfigService = new MockConfigService(emptyConfig);
+    useCase = new CreateMemoUseCase(mockConfigService, mockFileService, mockTemplateService, mockWorkspaceService);
+
+    try {
+      await useCase.execute('Daily Note', 'Test Title');
+      assert.fail('Expected error was not thrown');
+    } catch (error) {
+      assert.ok(error instanceof Error);
+      assert.ok(error.message.includes('No memo types configured'));
+    }
+  });
+
+  test('should throw error when config is null', async () => {
+    mockConfigService = {
+      loadConfig: async () => null as any
+    } as any;
+    useCase = new CreateMemoUseCase(mockConfigService, mockFileService, mockTemplateService, mockWorkspaceService);
+
+    try {
+      await useCase.execute('Daily Note', 'Test Title');
+      assert.fail('Expected error was not thrown');
+    } catch (error) {
+      assert.ok(error instanceof Error);
+      assert.ok(error.message.includes('No memo types configured'));
+    }
+  });
 });

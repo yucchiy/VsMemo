@@ -22,7 +22,7 @@ export class VsCodeConfigService implements IConfigService {
     try {
       const configContent = await this.fileService.readFile(configPath);
       const config = JSON.parse(configContent) as MemoConfig;
-      return config;
+      return this.validateAndFixConfig(config);
     } catch (error) {
       console.warn('Failed to load memo config, using default:', error);
       return this.getDefaultConfig();
@@ -32,6 +32,45 @@ export class VsCodeConfigService implements IConfigService {
   private getWorkspaceRoot(): string | undefined {
     const workspaceFolders = vscode.workspace.workspaceFolders;
     return workspaceFolders?.[0]?.uri.fsPath;
+  }
+
+  private validateAndFixConfig(config: any): MemoConfig {
+    if (!config || typeof config !== 'object') {
+      console.warn('Invalid config format, using default config');
+      return this.getDefaultConfig();
+    }
+
+    if (!Array.isArray(config.memoTypes)) {
+      console.warn('memoTypes is not an array, using default config');
+      return this.getDefaultConfig();
+    }
+
+    if (config.memoTypes.length === 0) {
+      console.warn('memoTypes is empty, using default config');
+      return this.getDefaultConfig();
+    }
+
+    for (const memoType of config.memoTypes) {
+      if (!memoType || typeof memoType !== 'object') {
+        console.warn('Invalid memo type object, using default config');
+        return this.getDefaultConfig();
+      }
+      if (!memoType.name || typeof memoType.name !== 'string') {
+        console.warn('Memo type missing name property, using default config');
+        return this.getDefaultConfig();
+      }
+      if (!memoType.template || typeof memoType.template !== 'string') {
+        console.warn('Memo type missing template property, using default config');
+        return this.getDefaultConfig();
+      }
+    }
+
+    if (!config.defaultOutputDir || typeof config.defaultOutputDir !== 'string') {
+      console.warn('defaultOutputDir missing or invalid, using default value');
+      config.defaultOutputDir = 'memos';
+    }
+
+    return config as MemoConfig;
   }
 
   private getDefaultConfig(): MemoConfig {
