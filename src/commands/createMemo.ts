@@ -9,7 +9,7 @@ export async function createMemo(): Promise<void> {
     const configService = new VsCodeConfigService(fileService);
     const templateService = new TemplateService();
     const workspaceService = new VsCodeWorkspaceService();
-    
+
     const useCase = new CreateMemoUseCase(configService, fileService, templateService, workspaceService);
     await useCase.execute();
   } catch (error) {

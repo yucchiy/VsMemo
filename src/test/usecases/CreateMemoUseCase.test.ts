@@ -8,7 +8,7 @@ import { Template, TemplateVariables } from '../../models/Template';
 
 class MockConfigService implements IConfigService {
   constructor(private config: MemoConfig) {}
-  
+
   async loadConfig(): Promise<MemoConfig> {
     return this.config;
   }
@@ -137,7 +137,7 @@ suite('CreateMemoUseCase', () => {
 
     const expectedPath = '/test/workspace/memos/Test Title.md';
     const writtenContent = mockFileService.getWrittenContent(expectedPath);
-    
+
     assert.ok(writtenContent);
     assert.ok(writtenContent.includes('---'));
     assert.ok(writtenContent.includes('title: Test Title'));

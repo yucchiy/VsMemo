@@ -24,5 +24,9 @@ export default [{
         eqeqeq: "warn",
         "no-throw-literal": "warn",
         semi: "warn",
+        "no-tabs": "error",
+        "no-trailing-spaces": "error",
+        "no-multiple-empty-lines": ["error", { "max": 1, "maxEOF": 1 }],
+        "indent": ["error", 2, { "SwitchCase": 1 }],
     },
 }];

@@ -4,11 +4,11 @@ import * as vscode from 'vscode';
 import { createMemo } from './commands/createMemo';
 
 export function activate(context: vscode.ExtensionContext) {
-	console.log('VsMemo extension is now active!');
+  console.log('VsMemo extension is now active!');
 
-	const createMemoDisposable = vscode.commands.registerCommand('vsmemo.createMemo', createMemo);
+  const createMemoDisposable = vscode.commands.registerCommand('vsmemo.createMemo', createMemo);
 
-	context.subscriptions.push(createMemoDisposable);
+  context.subscriptions.push(createMemoDisposable);
 }
 
 // This method is called when your extension is deactivated

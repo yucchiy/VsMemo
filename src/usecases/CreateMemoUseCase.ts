@@ -41,7 +41,7 @@ export class CreateMemoUseCase {
 
   async execute(memoTypeName?: string, title?: string): Promise<void> {
     const config = await this.configService.loadConfig();
-    
+
     let memoType: MemoType;
     if (memoTypeName) {
       const foundType = config.memoTypes.find(type => type.name === memoTypeName);
@@ -78,7 +78,7 @@ export class CreateMemoUseCase {
     }
 
     const fileExists = await this.fileService.exists(fullPath);
-    
+
     if (!fileExists) {
       const dirPath = path.dirname(fullPath);
       if (!(await this.fileService.exists(dirPath))) {

@@ -15,10 +15,10 @@ export class TemplateService implements ITemplateService {
       if (frontmatterEndIndex !== -1) {
         const frontmatterLines = lines.slice(1, frontmatterEndIndex + 1);
         const contentLines = lines.slice(frontmatterEndIndex + 2);
-        
+
         frontmatter = this.parseFrontmatter(frontmatterLines);
         content = contentLines.join('\n').replace(/^\n+/, '');
-        
+
         if (frontmatter.filePath) {
           filePath = this.replaceVariables(frontmatter.filePath, variables);
           delete frontmatter.filePath;
@@ -27,7 +27,7 @@ export class TemplateService implements ITemplateService {
     }
 
     content = this.replaceVariables(content, variables);
-    
+
     if (frontmatter) {
       frontmatter = this.replaceVariablesInObject(frontmatter, variables);
     }
@@ -52,7 +52,7 @@ export class TemplateService implements ITemplateService {
 
   private parseFrontmatter(lines: string[]): Record<string, any> {
     const frontmatter: Record<string, any> = {};
-    
+
     for (const line of lines) {
       const colonIndex = line.indexOf(':');
       if (colonIndex !== -1) {
@@ -61,24 +61,24 @@ export class TemplateService implements ITemplateService {
         frontmatter[key] = value;
       }
     }
-    
+
     return frontmatter;
   }
 
   private replaceVariables(text: string, variables: TemplateVariables): string {
     let result = text;
-    
+
     for (const [key, value] of Object.entries(variables)) {
       const placeholder = `{${key}}`;
       result = result.replace(new RegExp(placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), value);
     }
-    
+
     return result;
   }
 
   private replaceVariablesInObject(obj: Record<string, any>, variables: TemplateVariables): Record<string, any> {
     const result: Record<string, any> = {};
-    
+
     for (const [key, value] of Object.entries(obj)) {
       if (typeof value === 'string') {
         result[key] = this.replaceVariables(value, variables);
@@ -86,7 +86,7 @@ export class TemplateService implements ITemplateService {
         result[key] = value;
       }
     }
-    
+
     return result;
   }
 }

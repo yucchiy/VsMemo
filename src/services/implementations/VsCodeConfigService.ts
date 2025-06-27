@@ -14,7 +14,7 @@ export class VsCodeConfigService implements IConfigService {
     }
 
     const configPath = path.join(workspaceFolder, '.vsmemo', 'types.json');
-    
+
     if (!(await this.fileService.exists(configPath))) {
       return this.getDefaultConfig();
     }
