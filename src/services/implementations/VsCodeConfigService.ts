@@ -21,8 +21,8 @@ export class VsCodeConfigService implements IConfigService {
 
     try {
       const configContent = await this.fileService.readFile(configPath);
-      const config = JSON.parse(configContent) as MemoConfig;
-      return config;
+      const config: unknown = JSON.parse(configContent);
+      return this.validateAndFixConfig(config);
     } catch (error) {
       console.warn('Failed to load memo config, using default:', error);
       return this.getDefaultConfig();
@@ -32,6 +32,59 @@ export class VsCodeConfigService implements IConfigService {
   private getWorkspaceRoot(): string | undefined {
     const workspaceFolders = vscode.workspace.workspaceFolders;
     return workspaceFolders?.[0]?.uri.fsPath;
+  }
+
+  private validateAndFixConfig(config: unknown): MemoConfig {
+    if (!this.isObject(config)) {
+      console.warn('Invalid config format, using default config');
+      return this.getDefaultConfig();
+    }
+
+    if (!('memoTypes' in config) || !Array.isArray(config.memoTypes)) {
+      console.warn('memoTypes is not an array, using default config');
+      return this.getDefaultConfig();
+    }
+
+    if (config.memoTypes.length === 0) {
+      console.warn('memoTypes is empty, using default config');
+      return this.getDefaultConfig();
+    }
+
+    for (const memoType of config.memoTypes) {
+      if (!this.isValidMemoType(memoType)) {
+        console.warn('Invalid memo type object, using default config');
+        return this.getDefaultConfig();
+      }
+    }
+
+    const validatedConfig = config as { memoTypes: unknown[]; defaultOutputDir?: unknown };
+
+    if (!('defaultOutputDir' in validatedConfig) || typeof validatedConfig.defaultOutputDir !== 'string') {
+      console.warn('defaultOutputDir missing or invalid, using default value');
+      validatedConfig.defaultOutputDir = 'memos';
+    }
+
+    return validatedConfig as MemoConfig;
+  }
+
+  private isObject(value: unknown): value is Record<string, unknown> {
+    return value !== null && typeof value === 'object';
+  }
+
+  private isValidMemoType(memoType: unknown): memoType is { name: string; template: string } {
+    if (!this.isObject(memoType)) {
+      return false;
+    }
+
+    if (!('name' in memoType) || typeof memoType.name !== 'string') {
+      return false;
+    }
+
+    if (!('template' in memoType) || typeof memoType.template !== 'string') {
+      return false;
+    }
+
+    return true;
   }
 
   private getDefaultConfig(): MemoConfig {

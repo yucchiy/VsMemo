@@ -165,4 +165,5 @@ suite('CreateMemoUseCase', () => {
       assert.ok(error.message.includes('not found'));
     }
   });
+
 });
