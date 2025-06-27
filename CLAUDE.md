@@ -210,12 +210,55 @@ Current test suite covers:
 
 ## Development Rules
 
+### Git Workflow
+
+This project follows a simplified gitflow approach:
+
+#### Branch Strategy
+- **main**: Production-ready code, stable releases
+- **feature/xxx**: New feature development branches
+- **fix/xxx**: Bug fix branches
+
+#### Development Process
+1. **Start Feature Development**:
+   ```bash
+   git checkout main
+   git pull origin main
+   git checkout -b feature/feature-name
+   ```
+
+2. **During Development**:
+   - Make commits with clean, descriptive messages (no Claude signatures)
+   - Run tests frequently: `npm test`
+   - Keep commits focused and atomic
+
+3. **Complete Feature**:
+   ```bash
+   npm test                    # Ensure all tests pass
+   git push origin feature/feature-name
+   ```
+
+4. **Integration**:
+   - Create pull request from feature branch to main
+   - Code review and merge via GitHub
+   - Delete feature branch after merge
+
+#### Claude Code Instructions
+When asked to implement a feature:
+1. **Always** create a feature branch first
+2. Implement the feature with full test coverage
+3. Ensure all tests pass and linting succeeds
+4. Push the feature branch to origin
+5. Do NOT merge to main directly - always use pull requests
+
 ### Commit Messages
 
-**IMPORTANT**: Never include Claude Code signatures in commit messages:
+**CRITICAL RULE - ALWAYS CHECK**: Never include Claude Code signatures in commit messages:
 - ❌ Don't include: `🤖 Generated with [Claude Code]`
 - ❌ Don't include: `Co-Authored-By: Claude <noreply@anthropic.com>`
 - ✅ Use clean, descriptive commit messages focused on the change
+
+**Before every commit**: Re-read this section to ensure compliance with project-specific rules.
 
 ### Code Standards
 
