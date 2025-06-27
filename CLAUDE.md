@@ -93,29 +93,120 @@ The extension follows a **layered architecture** with **dependency injection** f
 ### Test Strategy
 
 - **Comprehensive Coverage**: Cover all layers (utilities, services, use cases, commands)
-- **Modern Patterns**: Use factory functions and mock objects for clean, maintainable tests
-- **VS Code Testing**: Tests use the VS Code test framework with Mocha
-- **Test Organization**: Nested test suites by feature/component
+- **Mock-Based Testing**: Use mock objects with dependency injection for isolated unit tests
+- **VS Code Testing**: Tests use the VS Code test framework with Mocha (not Jest)
+- **Test Organization**: Mirror source structure in test directory
+
+### VS Code API Mocking Strategy
+
+The main challenge in testing VS Code extensions is mocking the VS Code API. Our approach:
+
+1. **Interface Abstraction**: Create interfaces for VS Code API dependencies
+   - `IWorkspaceService` - Abstracts `vscode.workspace` and `vscode.window` APIs
+   - `IFileService` - Abstracts file system operations
+   - `IConfigService` - Abstracts configuration access
+
+2. **Dependency Injection**: Inject service implementations through constructors
+   ```typescript
+   export class CreateMemoUseCase {
+     constructor(
+       private configService: IConfigService,
+       private fileService: IFileService,
+       private templateService: ITemplateService,
+       private workspaceService: IWorkspaceService  // <- Injectable VS Code API wrapper
+     ) {}
+   }
+   ```
+
+3. **Mock Implementations**: Create test-specific mock services
+   ```typescript
+   class MockWorkspaceService implements IWorkspaceService {
+     private workspaceRoot: string | undefined = '/test/workspace';
+     private quickPickResult: any = undefined;
+     
+     getWorkspaceRoot(): string | undefined {
+       return this.workspaceRoot;
+     }
+     
+     setWorkspaceRoot(root: string | undefined): void {
+       this.workspaceRoot = root;
+     }
+     // ... other mock methods
+   }
+   ```
 
 ### Test Patterns
 
 ```typescript
-// Factory pattern for test data
-const createMockConfigService = (): IConfigService => ({
-  loadConfig: () => Promise.resolve(createDefaultConfig())
+// Mock service pattern
+class MockFileService implements IFileService {
+  private files = new Map<string, string>();
+  public openedFiles: string[] = [];
+  
+  async writeFile(path: string, content: string): Promise<void> {
+    this.files.set(path, content);
+  }
+  
+  getWrittenContent(path: string): string | undefined {
+    return this.files.get(path);
+  }
+}
+
+// Test setup with dependency injection
+setup(() => {
+  mockConfigService = new MockConfigService(testConfig);
+  mockFileService = new MockFileService();
+  mockTemplateService = new MockTemplateService();
+  mockWorkspaceService = new MockWorkspaceService();
+  
+  useCase = new CreateMemoUseCase(
+    mockConfigService,
+    mockFileService, 
+    mockTemplateService,
+    mockWorkspaceService
+  );
 });
 
-// Nested test organization
-describe('CreateMemoUseCase', () => {
-  describe('when creating new memo', () => {
-    it('should create file and open it', async () => {
-      // Test implementation
-    });
-  });
+// Test verification
+test('should create memo with specified type and title', async () => {
+  await useCase.execute('Daily Note', 'Test Title');
+  
+  const expectedPath = '/test/workspace/memos/Test Title.md';
+  const writtenContent = mockFileService.getWrittenContent(expectedPath);
+  
+  assert.ok(writtenContent);
+  assert.ok(writtenContent.includes('title: Test Title'));
+  assert.ok(mockFileService.openedFiles.includes(expectedPath));
 });
 ```
 
-Run tests with `npm run test` which automatically compiles and lints before testing.
+### Test Coverage
+
+Current test suite covers:
+- **Utilities** (dateUtils, pathUtils) - 11 tests
+- **Services** (TemplateService) - 7 tests  
+- **Use Cases** (CreateMemoUseCase) - 3 tests
+- **Total**: 21 tests passing
+
+### Running Tests
+
+- `npm test` - Runs full test suite (compile + lint + test)
+- Tests run in VS Code test environment with Mocha
+- Compilation must succeed before tests run
+- ESLint must pass before tests run
+
+### Test Debugging Tips
+
+1. **VS Code API Read-Only Properties**: Cannot mock `vscode.workspace.workspaceFolders` directly
+   - Solution: Use `IWorkspaceService` abstraction layer
+   
+2. **Mocha vs Jest**: VS Code uses Mocha, not Jest
+   - Use `assert` module, not `expect()`
+   - Use `setup()`/`teardown()`, not `beforeEach()`/`afterEach()`
+   
+3. **Mock Verification**: Check both behavior and state
+   - Verify method calls happened (behavior)
+   - Verify correct data was written (state)
 
 ## Development Rules
 
