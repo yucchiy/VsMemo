@@ -4,7 +4,8 @@ import { IConfigService } from '../../services/interfaces/IConfigService';
 import { IFileService } from '../../services/interfaces/IFileService';
 import { ITemplateService } from '../../services/interfaces/ITemplateService';
 import { MemoConfig } from '../../models/MemoConfig';
-import { Template, TemplateVariables } from '../../models/Template';
+import { Template } from '../../models/Template';
+import { VariableRegistry } from '../../variables/VariableRegistry';
 
 class MockConfigService implements IConfigService {
   constructor(private config: MemoConfig) {}
@@ -49,22 +50,17 @@ class MockFileService implements IFileService {
 }
 
 class MockTemplateService implements ITemplateService {
-  async processTemplateFromFile(templateFilePath: string, configBasePath: string, variables: TemplateVariables): Promise<Template> {
+  async processTemplateFromFile(templateFilePath: string, configBasePath: string, registry: VariableRegistry, resolvedVariables: Record<string, string>): Promise<Template> {
     return {
       content: `Processed: ${templateFilePath}`,
-      path: `memos/${variables.TITLE}.md`,
-      frontmatter: { title: variables.TITLE }
+      path: `memos/${resolvedVariables.TITLE}.md`,
+      frontmatter: { title: resolvedVariables.TITLE }
     };
   }
 
-  createTemplateVariables(title?: string): TemplateVariables {
-    return {
-      YEAR: '2025',
-      MONTH: '06',
-      DAY: '27',
-      DATE: '2025-06-27',
-      TITLE: title || '2025-06-27'
-    };
+  async extractVariableNamesFromFile(templateFilePath: string, configBasePath: string): Promise<Set<string>> {
+    // Mock: only return TITLE variable as used
+    return new Set(['TITLE']);
   }
 }
 

@@ -1,20 +1,26 @@
 import { ITemplateService } from '../interfaces/ITemplateService';
 import { IFileService } from '../interfaces/IFileService';
-import { Template, TemplateVariables } from '../../models/Template';
-import { getYear, getMonth, getDay, formatDate } from '../../utils/dateUtils';
-import { joinPaths } from '../../utils/pathUtils';
+import { Template } from '../../models/Template';
+import { VariableRegistry } from '../../variables/VariableRegistry';
+import { extractVariableNames } from '../../utils/variableUtils';
 import * as path from 'path';
 
 export class TemplateService implements ITemplateService {
   constructor(private fileService: IFileService) {}
 
-  async processTemplateFromFile(templateFilePath: string, configBasePath: string, variables: TemplateVariables): Promise<Template> {
+  async processTemplateFromFile(templateFilePath: string, configBasePath: string, registry: VariableRegistry, resolvedVariables: Record<string, string>): Promise<Template> {
     const fullTemplatePath = path.resolve(configBasePath, templateFilePath);
     const templateContent = await this.fileService.readFile(fullTemplatePath);
-    return this.processTemplate(templateContent, variables);
+    return this.processTemplate(templateContent, resolvedVariables);
   }
 
-  private processTemplate(templateContent: string, variables: TemplateVariables): Template {
+  async extractVariableNamesFromFile(templateFilePath: string, configBasePath: string): Promise<Set<string>> {
+    const fullTemplatePath = path.resolve(configBasePath, templateFilePath);
+    const templateContent = await this.fileService.readFile(fullTemplatePath);
+    return extractVariableNames(templateContent);
+  }
+
+  private processTemplate(templateContent: string, variables: Record<string, string>): Template {
     const lines = templateContent.split('\n');
     let frontmatter: Record<string, any> | undefined;
     let content = templateContent;
@@ -49,17 +55,6 @@ export class TemplateService implements ITemplateService {
     };
   }
 
-  createTemplateVariables(title?: string): TemplateVariables {
-    const now = new Date();
-    return {
-      YEAR: getYear(now),
-      MONTH: getMonth(now),
-      DAY: getDay(now),
-      DATE: formatDate(now),
-      TITLE: title || `${getYear(now)}-${getMonth(now)}-${getDay(now)}`
-    };
-  }
-
   private parseFrontmatter(lines: string[]): Record<string, any> {
     const frontmatter: Record<string, any> = {};
 
@@ -75,7 +70,7 @@ export class TemplateService implements ITemplateService {
     return frontmatter;
   }
 
-  private replaceVariables(text: string, variables: TemplateVariables): string {
+  private replaceVariables(text: string, variables: Record<string, string>): string {
     let result = text;
 
     for (const [key, value] of Object.entries(variables)) {
@@ -86,7 +81,7 @@ export class TemplateService implements ITemplateService {
     return result;
   }
 
-  private replaceVariablesInObject(obj: Record<string, any>, variables: TemplateVariables): Record<string, any> {
+  private replaceVariablesInObject(obj: Record<string, any>, variables: Record<string, string>): Record<string, any> {
     const result: Record<string, any> = {};
 
     for (const [key, value] of Object.entries(obj)) {

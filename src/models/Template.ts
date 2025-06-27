@@ -9,5 +9,9 @@ export interface TemplateVariables {
   MONTH: string;
   DAY: string;
   DATE: string;
+  DATETIME: string;
+  TIME: string;
+  TIMESTAMP: string;
   TITLE: string;
+  [key: string]: string;
 }

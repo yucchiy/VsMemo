@@ -1,6 +1,7 @@
 import * as assert from 'assert';
 import { TemplateService } from '../../services/implementations/TemplateService';
 import { IFileService } from '../../services/interfaces/IFileService';
+import { VariableRegistry } from '../../variables/VariableRegistry';
 
 class MockFileService implements IFileService {
   private files = new Map<string, string>();
@@ -48,26 +49,6 @@ suite('TemplateService', () => {
     templateService = new TemplateService(mockFileService);
   });
 
-  suite('createTemplateVariables', () => {
-    test('should create template variables with current date', () => {
-      const variables = templateService.createTemplateVariables();
-
-      assert.ok(variables.YEAR);
-      assert.ok(variables.MONTH);
-      assert.ok(variables.DAY);
-      assert.ok(variables.DATE);
-      assert.ok(variables.TITLE);
-      assert.strictEqual(variables.YEAR.length, 4);
-      assert.strictEqual(variables.MONTH.length, 2);
-      assert.strictEqual(variables.DAY.length, 2);
-    });
-
-    test('should use provided title', () => {
-      const variables = templateService.createTemplateVariables('My Custom Title');
-      assert.strictEqual(variables.TITLE, 'My Custom Title');
-    });
-  });
-
   suite('processTemplateFromFile', () => {
     test('should load template from file and process it', async () => {
       const templateContent = 'Title: {TITLE}\nDate: {DATE}';
@@ -77,7 +58,8 @@ suite('TemplateService', () => {
 
       mockFileService.setFileContent(fullTemplatePath, templateContent);
 
-      const variables = {
+      const registry = new VariableRegistry();
+      const resolvedVariables = {
         YEAR: '2025',
         MONTH: '06',
         DAY: '27',
@@ -85,7 +67,7 @@ suite('TemplateService', () => {
         TITLE: 'Test Memo'
       };
 
-      const result = await templateService.processTemplateFromFile(templateFilePath, configBasePath, variables);
+      const result = await templateService.processTemplateFromFile(templateFilePath, configBasePath, registry, resolvedVariables);
 
       assert.strictEqual(result.content, 'Title: Test Memo\nDate: 2025-06-27');
       assert.strictEqual(result.frontmatter, undefined);
@@ -108,7 +90,8 @@ Content here`;
 
       mockFileService.setFileContent(fullTemplatePath, templateContent);
 
-      const variables = {
+      const registry = new VariableRegistry();
+      const resolvedVariables = {
         YEAR: '2025',
         MONTH: '06',
         DAY: '27',
@@ -116,7 +99,7 @@ Content here`;
         TITLE: 'Test Memo'
       };
 
-      const result = await templateService.processTemplateFromFile(templateFilePath, configBasePath, variables);
+      const result = await templateService.processTemplateFromFile(templateFilePath, configBasePath, registry, resolvedVariables);
 
       assert.strictEqual(result.content, '# Test Memo\n\nContent here');
       assert.deepStrictEqual(result.frontmatter, {
@@ -130,7 +113,8 @@ Content here`;
     test('should handle file not found error', async () => {
       const templateFilePath = 'templates/nonexistent.md';
       const configBasePath = '/workspace/.vsmemo';
-      const variables = {
+      const registry = new VariableRegistry();
+      const resolvedVariables = {
         YEAR: '2025',
         MONTH: '06',
         DAY: '27',
@@ -139,7 +123,7 @@ Content here`;
       };
 
       await assert.rejects(
-        async () => await templateService.processTemplateFromFile(templateFilePath, configBasePath, variables),
+        async () => await templateService.processTemplateFromFile(templateFilePath, configBasePath, registry, resolvedVariables),
         /File not found/
       );
     });
