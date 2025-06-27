@@ -50,17 +50,14 @@ class MockFileService implements IFileService {
 }
 
 class MockTemplateService implements ITemplateService {
-  async processTemplateFromFile(templateFilePath: string, configBasePath: string, registry: VariableRegistry, resolvedVariables: Record<string, string>): Promise<Template> {
+  async processTemplateFromFile(templateFilePath: string, configBasePath: string, registry: VariableRegistry, presetInputs?: Record<string, string>): Promise<Template> {
+    // Mock: simulate that TITLE variable is resolved internally
+    const title = presetInputs?.['TITLE'] || 'Default Title';
     return {
       content: `Processed: ${templateFilePath}`,
-      path: `memos/${resolvedVariables.TITLE}.md`,
-      frontmatter: { title: resolvedVariables.TITLE }
+      path: `memos/${title}.md`,
+      frontmatter: { title: title }
     };
-  }
-
-  async extractVariableNamesFromFile(templateFilePath: string, configBasePath: string): Promise<Set<string>> {
-    // Mock: only return TITLE variable as used
-    return new Set(['TITLE']);
   }
 }
 

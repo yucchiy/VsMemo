@@ -1,7 +1,9 @@
 export interface VariableContext {
-  title?: string;
   date: Date;
   userInputs?: Record<string, string>;
+  workspaceService?: {
+    showInputBox(options?: any): Promise<string | undefined>;
+  };
 }
 
 export interface IVariable {

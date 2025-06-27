@@ -4,7 +4,6 @@ import { VariableContext } from '../../variables/IVariable';
 
 suite('UserDefinedVariable', () => {
   const context: VariableContext = {
-    title: 'Test',
     date: new Date(),
     userInputs: {
       'PROJECT': 'MyProject',

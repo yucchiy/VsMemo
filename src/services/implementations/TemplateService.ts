@@ -2,22 +2,32 @@ import { ITemplateService } from '../interfaces/ITemplateService';
 import { IFileService } from '../interfaces/IFileService';
 import { Template } from '../../models/Template';
 import { VariableRegistry } from '../../variables/VariableRegistry';
+import { VariableContext } from '../../variables/IVariable';
 import { extractVariableNames } from '../../utils/variableUtils';
+import { IWorkspaceService } from '../../usecases/CreateMemoUseCase';
 import * as path from 'path';
 
 export class TemplateService implements ITemplateService {
-  constructor(private fileService: IFileService) {}
+  constructor(private fileService: IFileService, private workspaceService: IWorkspaceService) {}
 
-  async processTemplateFromFile(templateFilePath: string, configBasePath: string, registry: VariableRegistry, resolvedVariables: Record<string, string>): Promise<Template> {
+  async processTemplateFromFile(templateFilePath: string, configBasePath: string, registry: VariableRegistry, presetInputs?: Record<string, string>): Promise<Template> {
     const fullTemplatePath = path.resolve(configBasePath, templateFilePath);
     const templateContent = await this.fileService.readFile(fullTemplatePath);
+
+    // Extract variables used in the template
+    const usedVariableNames = extractVariableNames(templateContent);
+
+    // Create context for variable resolution
+    const context: VariableContext = {
+      date: new Date(),
+      userInputs: presetInputs || {},
+      workspaceService: this.workspaceService
+    };
+
+    // Resolve only used variables
+    const resolvedVariables = await registry.resolveUsedVariables(usedVariableNames, context);
+
     return this.processTemplate(templateContent, resolvedVariables);
-  }
-
-  async extractVariableNamesFromFile(templateFilePath: string, configBasePath: string): Promise<Set<string>> {
-    const fullTemplatePath = path.resolve(configBasePath, templateFilePath);
-    const templateContent = await this.fileService.readFile(fullTemplatePath);
-    return extractVariableNames(templateContent);
   }
 
   private processTemplate(templateContent: string, variables: Record<string, string>): Template {

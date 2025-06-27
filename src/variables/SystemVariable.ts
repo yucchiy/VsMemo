@@ -6,5 +6,5 @@ export abstract class SystemVariable implements IVariable {
     public readonly description?: string
   ) {}
 
-  abstract resolve(context: VariableContext): string;
+  abstract resolve(context: VariableContext): string | Promise<string>;
 }

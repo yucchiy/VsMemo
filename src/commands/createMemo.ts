@@ -7,8 +7,8 @@ export async function createMemo(): Promise<void> {
   try {
     const fileService = new VsCodeFileService();
     const configService = new VsCodeConfigService(fileService);
-    const templateService = new TemplateService(fileService);
     const workspaceService = new VsCodeWorkspaceService();
+    const templateService = new TemplateService(fileService, workspaceService);
 
     const useCase = new CreateMemoUseCase(configService, fileService, templateService, workspaceService);
     await useCase.execute();

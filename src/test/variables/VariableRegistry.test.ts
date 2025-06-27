@@ -2,6 +2,7 @@ import * as assert from 'assert';
 import { VariableRegistry } from '../../variables/VariableRegistry';
 import { UserDefinedVariable } from '../../variables/UserDefinedVariable';
 import { Variable } from '../../models/Variable';
+import { VariableContext } from '../../variables/IVariable';
 
 suite('VariableRegistry', () => {
   let registry: VariableRegistry;
@@ -67,5 +68,49 @@ suite('VariableRegistry', () => {
 
     const retrieved = registry.get('CUSTOM');
     assert.strictEqual(retrieved, customVar);
+  });
+
+  test('should resolve only used variables', async () => {
+    const userVarDefs: Variable[] = [
+      { name: 'PROJECT', description: 'Project name', default: 'MyProject' },
+      { name: 'AUTHOR', description: 'Author name', default: 'John' }
+    ];
+
+    registry.registerUserDefinedVariables(userVarDefs);
+
+    const usedVariables = new Set(['YEAR', 'PROJECT']);
+    const context: VariableContext = {
+      date: new Date(2025, 5, 27),
+      userInputs: {}
+    };
+
+    const resolved = await registry.resolveUsedVariables(usedVariables, context);
+
+    assert.strictEqual(Object.keys(resolved).length, 2);
+    assert.strictEqual(resolved['YEAR'], '2025');
+    assert.strictEqual(resolved['PROJECT'], 'MyProject');
+    assert.ok(!resolved.hasOwnProperty('AUTHOR')); // Should not be resolved
+  });
+
+  test('should resolve variables with user inputs', async () => {
+    const userVarDefs: Variable[] = [
+      { name: 'PROJECT', description: 'Project name', default: 'Default' }
+    ];
+
+    registry.registerUserDefinedVariables(userVarDefs);
+
+    const usedVariables = new Set(['PROJECT', 'TITLE']);
+    const context: VariableContext = {
+      date: new Date(2025, 5, 27),
+      userInputs: {
+        'PROJECT': 'UserProject',
+        'TITLE': 'UserTitle'
+      }
+    };
+
+    const resolved = await registry.resolveUsedVariables(usedVariables, context);
+
+    assert.strictEqual(resolved['PROJECT'], 'UserProject');
+    assert.strictEqual(resolved['TITLE'], 'UserTitle');
   });
 });

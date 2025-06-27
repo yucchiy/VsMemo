@@ -1,4 +1,4 @@
-import { IVariable } from './IVariable';
+import { IVariable, VariableContext } from './IVariable';
 import { UserDefinedVariable } from './UserDefinedVariable';
 import {
   YearVariable,
@@ -66,5 +66,19 @@ export class VariableRegistry {
 
   getSystemVariables(): IVariable[] {
     return this.getAll().filter(v => !(v instanceof UserDefinedVariable));
+  }
+
+  async resolveUsedVariables(usedVariableNames: Set<string>, context: VariableContext): Promise<Record<string, string>> {
+    const resolvedVariables: Record<string, string> = {};
+
+    for (const variableName of usedVariableNames) {
+      const variable = this.get(variableName);
+      if (variable) {
+        const value = await variable.resolve(context);
+        resolvedVariables[variableName] = value;
+      }
+    }
+
+    return resolvedVariables;
   }
 }

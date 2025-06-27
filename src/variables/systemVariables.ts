@@ -84,7 +84,24 @@ export class TitleVariable extends SystemVariable {
     super('TITLE', 'Memo title');
   }
 
-  resolve(context: VariableContext): string {
-    return context.title || formatDate(context.date);
+  async resolve(context: VariableContext): Promise<string> {
+    // Check if title was provided in userInputs
+    if (context.userInputs?.['TITLE']) {
+      return context.userInputs['TITLE'];
+    }
+
+    // If workspaceService is available, prompt for input
+    if (context.workspaceService) {
+      const input = await context.workspaceService.showInputBox({
+        prompt: 'Enter memo title',
+        placeHolder: 'My memo title'
+      });
+      if (input) {
+        return input;
+      }
+    }
+
+    // Fallback to date
+    return formatDate(context.date);
   }
 }

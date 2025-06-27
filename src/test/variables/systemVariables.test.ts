@@ -14,9 +14,10 @@ import { VariableContext } from '../../variables/IVariable';
 suite('System Variables', () => {
   const testDate = new Date(2025, 5, 27, 15, 30, 45, 123); // June 27, 2025 (month is 0-indexed)
   const context: VariableContext = {
-    title: 'Test Memo',
     date: testDate,
-    userInputs: {}
+    userInputs: {
+      'TITLE': 'Test Memo'
+    }
   };
 
   test('YearVariable should return 4-digit year', () => {
@@ -63,18 +64,36 @@ suite('System Variables', () => {
     assert.strictEqual(variable.resolve(context), testDate.getTime().toString());
   });
 
-  test('TitleVariable should return title when provided', () => {
+  test('TitleVariable should return title when provided', async () => {
     const variable = new TitleVariable();
     assert.strictEqual(variable.name, 'TITLE');
-    assert.strictEqual(variable.resolve(context), 'Test Memo');
+    assert.strictEqual(await variable.resolve(context), 'Test Memo');
   });
 
-  test('TitleVariable should return default when title is not provided', () => {
+  test('TitleVariable should return default when title is not provided', async () => {
     const variable = new TitleVariable();
     const contextWithoutTitle: VariableContext = {
       date: testDate,
       userInputs: {}
     };
-    assert.strictEqual(variable.resolve(contextWithoutTitle), '2025-06-27');
+    assert.strictEqual(await variable.resolve(contextWithoutTitle), '2025-06-27');
+  });
+
+  test('TitleVariable should prompt for input when workspaceService is available', async () => {
+    const variable = new TitleVariable();
+    let promptShown = false;
+    const contextWithWorkspace: VariableContext = {
+      date: testDate,
+      userInputs: {},
+      workspaceService: {
+        showInputBox: async (options: any) => {
+          promptShown = true;
+          assert.strictEqual(options.prompt, 'Enter memo title');
+          return 'User Input Title';
+        }
+      }
+    };
+    assert.strictEqual(await variable.resolve(contextWithWorkspace), 'User Input Title');
+    assert.ok(promptShown);
   });
 });

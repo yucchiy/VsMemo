@@ -5,7 +5,7 @@ import { IFileService } from '../services/interfaces/IFileService';
 import { ITemplateService } from '../services/interfaces/ITemplateService';
 import { MemoType } from '../models/MemoType';
 import { VariableRegistry } from '../variables/VariableRegistry';
-import { VariableContext } from '../variables/IVariable';
+import { formatDate } from '../utils/dateUtils';
 
 export interface IWorkspaceService {
   getWorkspaceRoot(): string | undefined;
@@ -55,13 +55,6 @@ export class CreateMemoUseCase {
       memoType = await this.selectMemoType(config.memoTypes);
     }
 
-    if (!title) {
-      title = await this.promptForTitle();
-      if (!title) {
-        return;
-      }
-    }
-
     const workspaceRoot = this.workspaceService.getWorkspaceRoot();
     if (!workspaceRoot) {
       this.workspaceService.showErrorMessage('No workspace folder is open');
@@ -70,53 +63,25 @@ export class CreateMemoUseCase {
 
     const configBasePath = path.join(workspaceRoot, '.vsmemo');
 
-    // Extract variables used in the template
-    const usedVariableNames = await this.templateService.extractVariableNamesFromFile(memoType.template, configBasePath);
-
     // Create variable registry and register user-defined variables
     const registry = new VariableRegistry();
     if (config.variables) {
       registry.registerUserDefinedVariables(config.variables);
     }
 
-    // Collect user inputs only for used user-defined variables
-    const userInputs: Record<string, string> = {};
-    for (const variable of registry.getUserDefinedVariables()) {
-      if (usedVariableNames.has(variable.name)) {
-        const input = await this.workspaceService.showInputBox({
-          prompt: variable.description || `Enter value for ${variable.name}`,
-          placeHolder: variable.name,
-          value: (variable as any).defaultValue
-        });
-        if (input !== undefined) {
-          userInputs[variable.name] = input;
-        }
-      }
+    // Prepare preset inputs
+    const presetInputs: Record<string, string> = {};
+    if (title) {
+      presetInputs['TITLE'] = title;
     }
 
-    // Create variable context
-    const context: VariableContext = {
-      title,
-      date: new Date(),
-      userInputs
-    };
-
-    // Resolve only used variables
-    const resolvedVariables: Record<string, string> = {};
-    for (const variableName of usedVariableNames) {
-      const variable = registry.get(variableName);
-      if (variable) {
-        const value = await variable.resolve(context);
-        resolvedVariables[variableName] = value;
-      }
-    }
-    const processedTemplate = await this.templateService.processTemplateFromFile(memoType.template, configBasePath, registry, resolvedVariables);
+    const processedTemplate = await this.templateService.processTemplateFromFile(memoType.template, configBasePath, registry, presetInputs);
 
     let fullPath: string;
     if (processedTemplate.path) {
       fullPath = path.join(workspaceRoot, processedTemplate.path);
     } else {
-      const fileName = `${resolvedVariables.TITLE}.md`;
+      const fileName = title ? `${title}.md` : `${formatDate(new Date())}.md`;
       fullPath = path.join(workspaceRoot, config.defaultOutputDir, fileName);
     }
 
@@ -159,10 +124,4 @@ export class CreateMemoUseCase {
     return selected.memoType;
   }
 
-  private async promptForTitle(): Promise<string | undefined> {
-    return await this.workspaceService.showInputBox({
-      prompt: 'Enter memo title',
-      placeHolder: 'My memo title'
-    });
-  }
 }

@@ -2,6 +2,7 @@ import * as assert from 'assert';
 import { TemplateService } from '../../services/implementations/TemplateService';
 import { IFileService } from '../../services/interfaces/IFileService';
 import { VariableRegistry } from '../../variables/VariableRegistry';
+import { IWorkspaceService } from '../../usecases/CreateMemoUseCase';
 
 class MockFileService implements IFileService {
   private files = new Map<string, string>();
@@ -40,13 +41,33 @@ class MockFileService implements IFileService {
   }
 }
 
+class MockWorkspaceService implements IWorkspaceService {
+  getWorkspaceRoot(): string | undefined {
+    return '/test/workspace';
+  }
+
+  async showQuickPick<T extends any>(items: readonly T[], options?: any): Promise<T | undefined> {
+    return undefined;
+  }
+
+  async showInputBox(options?: any): Promise<string | undefined> {
+    return undefined;
+  }
+
+  showErrorMessage(message: string): void {
+    // Mock implementation
+  }
+}
+
 suite('TemplateService', () => {
   let templateService: TemplateService;
   let mockFileService: MockFileService;
+  let mockWorkspaceService: MockWorkspaceService;
 
   setup(() => {
     mockFileService = new MockFileService();
-    templateService = new TemplateService(mockFileService);
+    mockWorkspaceService = new MockWorkspaceService();
+    templateService = new TemplateService(mockFileService, mockWorkspaceService);
   });
 
   suite('processTemplateFromFile', () => {
@@ -59,15 +80,11 @@ suite('TemplateService', () => {
       mockFileService.setFileContent(fullTemplatePath, templateContent);
 
       const registry = new VariableRegistry();
-      const resolvedVariables = {
-        YEAR: '2025',
-        MONTH: '06',
-        DAY: '27',
-        DATE: '2025-06-27',
+      const presetInputs = {
         TITLE: 'Test Memo'
       };
 
-      const result = await templateService.processTemplateFromFile(templateFilePath, configBasePath, registry, resolvedVariables);
+      const result = await templateService.processTemplateFromFile(templateFilePath, configBasePath, registry, presetInputs);
 
       assert.strictEqual(result.content, 'Title: Test Memo\nDate: 2025-06-27');
       assert.strictEqual(result.frontmatter, undefined);
@@ -91,15 +108,11 @@ Content here`;
       mockFileService.setFileContent(fullTemplatePath, templateContent);
 
       const registry = new VariableRegistry();
-      const resolvedVariables = {
-        YEAR: '2025',
-        MONTH: '06',
-        DAY: '27',
-        DATE: '2025-06-27',
+      const presetInputs = {
         TITLE: 'Test Memo'
       };
 
-      const result = await templateService.processTemplateFromFile(templateFilePath, configBasePath, registry, resolvedVariables);
+      const result = await templateService.processTemplateFromFile(templateFilePath, configBasePath, registry, presetInputs);
 
       assert.strictEqual(result.content, '# Test Memo\n\nContent here');
       assert.deepStrictEqual(result.frontmatter, {
