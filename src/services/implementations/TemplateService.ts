@@ -1,10 +1,20 @@
 import { ITemplateService } from '../interfaces/ITemplateService';
+import { IFileService } from '../interfaces/IFileService';
 import { Template, TemplateVariables } from '../../models/Template';
 import { getYear, getMonth, getDay, formatDate } from '../../utils/dateUtils';
 import { joinPaths } from '../../utils/pathUtils';
+import * as path from 'path';
 
 export class TemplateService implements ITemplateService {
-  processTemplate(templateContent: string, variables: TemplateVariables): Template {
+  constructor(private fileService: IFileService) {}
+
+  async processTemplateFromFile(templateFilePath: string, configBasePath: string, variables: TemplateVariables): Promise<Template> {
+    const fullTemplatePath = path.resolve(configBasePath, templateFilePath);
+    const templateContent = await this.fileService.readFile(fullTemplatePath);
+    return this.processTemplate(templateContent, variables);
+  }
+
+  private processTemplate(templateContent: string, variables: TemplateVariables): Template {
     const lines = templateContent.split('\n');
     let frontmatter: Record<string, any> | undefined;
     let content = templateContent;

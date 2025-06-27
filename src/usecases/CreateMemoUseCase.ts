@@ -61,13 +61,14 @@ export class CreateMemoUseCase {
     }
 
     const variables = this.templateService.createTemplateVariables(title);
-    const processedTemplate = this.templateService.processTemplate(memoType.template, variables);
-
     const workspaceRoot = this.workspaceService.getWorkspaceRoot();
     if (!workspaceRoot) {
       this.workspaceService.showErrorMessage('No workspace folder is open');
       return;
     }
+
+    const configBasePath = path.join(workspaceRoot, '.vsmemo');
+    const processedTemplate = await this.templateService.processTemplateFromFile(memoType.template, configBasePath, variables);
 
     let fullPath: string;
     if (processedTemplate.filePath) {

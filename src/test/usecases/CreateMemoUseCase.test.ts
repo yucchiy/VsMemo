@@ -49,9 +49,9 @@ class MockFileService implements IFileService {
 }
 
 class MockTemplateService implements ITemplateService {
-  processTemplate(templateContent: string, variables: TemplateVariables): Template {
+  async processTemplateFromFile(templateFilePath: string, configBasePath: string, variables: TemplateVariables): Promise<Template> {
     return {
-      content: `Processed: ${templateContent}`,
+      content: `Processed: ${templateFilePath}`,
       filePath: `memos/${variables.TITLE}.md`,
       frontmatter: { title: variables.TITLE }
     };
