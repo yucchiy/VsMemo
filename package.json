@@ -17,6 +17,11 @@
         "command": "vsmemo.createMemo",
         "title": "Create New Memo",
         "category": "VsMemo"
+      },
+      {
+        "command": "vsmemo.listMemos",
+        "title": "List Memos",
+        "category": "VsMemo"
       }
     ]
   },

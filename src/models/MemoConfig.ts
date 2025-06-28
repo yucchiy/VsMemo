@@ -3,6 +3,8 @@ import { Variable } from './Variable';
 
 export interface MemoConfig {
   memoTypes: MemoType[];
-  defaultOutputDir: string;
+  baseDir: string;
+  fileExtensions: string[];
+  defaultExtension: string;
   variables?: Variable[];
 }

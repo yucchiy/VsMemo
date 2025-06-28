@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { IFileService } from '../interfaces/IFileService';
+import { IFileService, FileStats } from '../interfaces/IFileService';
 
 export class VsCodeFileService implements IFileService {
   async exists(filePath: string): Promise<boolean> {
@@ -28,5 +28,18 @@ export class VsCodeFileService implements IFileService {
   async openFile(filePath: string): Promise<void> {
     const document = await vscode.workspace.openTextDocument(filePath);
     await vscode.window.showTextDocument(document);
+  }
+
+  async readDirectory(dirPath: string): Promise<string[]> {
+    const entries = await fs.readdir(dirPath);
+    return entries;
+  }
+
+  async getStats(filePath: string): Promise<FileStats> {
+    const stats = await fs.stat(filePath);
+    return {
+      lastModified: stats.mtime,
+      isDirectory: stats.isDirectory()
+    };
   }
 }

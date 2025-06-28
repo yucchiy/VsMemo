@@ -57,11 +57,28 @@ export class VsCodeConfigService implements IConfigService {
       }
     }
 
-    const validatedConfig = config as { memoTypes: unknown[]; defaultOutputDir?: unknown };
+    const validatedConfig = config as {
+      memoTypes: unknown[];
+      baseDir?: unknown;
+      fileExtensions?: unknown;
+      defaultExtension?: unknown;
+    };
 
-    if (!('defaultOutputDir' in validatedConfig) || typeof validatedConfig.defaultOutputDir !== 'string') {
-      console.warn('defaultOutputDir missing or invalid, using default value');
-      validatedConfig.defaultOutputDir = 'memos';
+    if (!('baseDir' in validatedConfig) || typeof validatedConfig.baseDir !== 'string') {
+      console.warn('baseDir missing or invalid, using default value');
+      validatedConfig.baseDir = '.';
+    }
+
+    if (!('fileExtensions' in validatedConfig) || !Array.isArray(validatedConfig.fileExtensions) ||
+        !validatedConfig.fileExtensions.every(ext => typeof ext === 'string' && ext.startsWith('.'))) {
+      console.warn('fileExtensions missing or invalid, using default value');
+      validatedConfig.fileExtensions = ['.md', '.markdown'];
+    }
+
+    if (!('defaultExtension' in validatedConfig) || typeof validatedConfig.defaultExtension !== 'string' ||
+        !validatedConfig.defaultExtension.startsWith('.')) {
+      console.warn('defaultExtension missing or invalid, using default value');
+      validatedConfig.defaultExtension = '.md';
     }
 
     return validatedConfig as MemoConfig;
@@ -71,8 +88,12 @@ export class VsCodeConfigService implements IConfigService {
     return value !== null && typeof value === 'object';
   }
 
-  private isValidMemoType(memoType: unknown): memoType is { name: string; template: string } {
+  private isValidMemoType(memoType: unknown): memoType is { id: string; name: string; template: string } {
     if (!this.isObject(memoType)) {
+      return false;
+    }
+
+    if (!('id' in memoType) || typeof memoType.id !== 'string') {
       return false;
     }
 
@@ -91,6 +112,7 @@ export class VsCodeConfigService implements IConfigService {
     return {
       memoTypes: [
         {
+          id: 'daily',
           name: 'Daily Note',
           template: `---
 title: {TITLE}
@@ -108,6 +130,7 @@ filePath: daily/{YEAR}/{MONTH}/{DAY}.md
 `
         },
         {
+          id: 'meeting',
           name: 'Meeting Note',
           template: `---
 title: {TITLE}
@@ -130,7 +153,9 @@ filePath: meetings/{YEAR}/{MONTH}/{TITLE}.md
 `
         }
       ],
-      defaultOutputDir: 'memos'
+      baseDir: '.',
+      fileExtensions: ['.md', '.markdown'],
+      defaultExtension: '.md'
     };
   }
 }

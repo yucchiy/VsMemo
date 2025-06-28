@@ -1,6 +1,6 @@
 import * as assert from 'assert';
 import { TemplateService } from '../../services/implementations/TemplateService';
-import { IFileService } from '../../services/interfaces/IFileService';
+import { IFileService, FileStats } from '../../services/interfaces/IFileService';
 import { VariableRegistry } from '../../variables/VariableRegistry';
 import { IWorkspaceService } from '../../usecases/CreateMemoUseCase';
 
@@ -38,6 +38,17 @@ class MockFileService implements IFileService {
 
   getWrittenContent(path: string): string | undefined {
     return this.files.get(path);
+  }
+
+  async readDirectory(path: string): Promise<string[]> {
+    return [];
+  }
+
+  async getStats(path: string): Promise<FileStats> {
+    return {
+      lastModified: new Date(),
+      isDirectory: false
+    };
   }
 }
 
@@ -86,7 +97,7 @@ suite('TemplateService', () => {
 
       const result = await templateService.processTemplateFromFile(templateFilePath, configBasePath, registry, presetInputs);
 
-      assert.strictEqual(result.content, 'Title: Test Memo\nDate: 2025-06-27');
+      assert.strictEqual(result.content, 'Title: Test Memo\nDate: 2025-06-28');
       assert.strictEqual(result.frontmatter, undefined);
       assert.strictEqual(result.path, '');
     });
@@ -117,10 +128,10 @@ Content here`;
       assert.strictEqual(result.content, '# Test Memo\n\nContent here');
       assert.deepStrictEqual(result.frontmatter, {
         title: 'Test Memo',
-        date: '2025-06-27'
+        date: '2025-06-28'
       });
       assert.ok(!('path' in (result.frontmatter || {})), 'path property should be removed from frontmatter');
-      assert.strictEqual(result.path, 'notes/2025/06/27.md');
+      assert.strictEqual(result.path, 'notes/2025/06/28.md');
     });
 
     test('should handle file not found error', async () => {

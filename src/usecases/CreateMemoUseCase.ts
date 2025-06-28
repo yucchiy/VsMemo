@@ -79,10 +79,11 @@ export class CreateMemoUseCase {
 
     let fullPath: string;
     if (processedTemplate.path) {
-      fullPath = path.join(workspaceRoot, processedTemplate.path);
+      // Template path is relative to baseDir
+      fullPath = path.join(workspaceRoot, config.baseDir, processedTemplate.path);
     } else {
-      const fileName = title ? `${title}.md` : `${formatDate(new Date())}.md`;
-      fullPath = path.join(workspaceRoot, config.defaultOutputDir, fileName);
+      const fileName = title ? `${title}${config.defaultExtension}` : `${formatDate(new Date())}${config.defaultExtension}`;
+      fullPath = path.join(workspaceRoot, config.baseDir, fileName);
     }
 
     const fileExists = await this.fileService.exists(fullPath);
@@ -94,12 +95,15 @@ export class CreateMemoUseCase {
       }
 
       let content = processedTemplate.content;
-      if (processedTemplate.frontmatter) {
-        const frontmatterString = Object.entries(processedTemplate.frontmatter)
-          .map(([key, value]) => `${key}: ${value}`)
-          .join('\n');
-        content = `---\n${frontmatterString}\n---\n\n${content}`;
-      }
+
+      // Add type to frontmatter
+      const frontmatter = processedTemplate.frontmatter || {};
+      frontmatter.type = memoType.id;
+
+      const frontmatterString = Object.entries(frontmatter)
+        .map(([key, value]) => `${key}: ${value}`)
+        .join('\n');
+      content = `---\n${frontmatterString}\n---\n\n${content}`;
 
       await this.fileService.writeFile(fullPath, content);
     }

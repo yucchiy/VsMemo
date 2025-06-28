@@ -1,7 +1,7 @@
 import * as assert from 'assert';
 import { CreateMemoUseCase, IWorkspaceService } from '../../usecases/CreateMemoUseCase';
 import { IConfigService } from '../../services/interfaces/IConfigService';
-import { IFileService } from '../../services/interfaces/IFileService';
+import { IFileService, FileStats } from '../../services/interfaces/IFileService';
 import { ITemplateService } from '../../services/interfaces/ITemplateService';
 import { MemoConfig } from '../../models/MemoConfig';
 import { Template } from '../../models/Template';
@@ -47,17 +47,34 @@ class MockFileService implements IFileService {
   getWrittenContent(path: string): string | undefined {
     return this.files.get(path);
   }
+
+  async readDirectory(path: string): Promise<string[]> {
+    return [];
+  }
+
+  async getStats(path: string): Promise<FileStats> {
+    return {
+      lastModified: new Date(),
+      isDirectory: false
+    };
+  }
 }
 
 class MockTemplateService implements ITemplateService {
+  private customPath?: string;
+
   async processTemplateFromFile(templateFilePath: string, configBasePath: string, registry: VariableRegistry, presetInputs?: Record<string, string>): Promise<Template> {
     // Mock: simulate that TITLE variable is resolved internally
     const title = presetInputs?.['TITLE'] || 'Default Title';
     return {
       content: `Processed: ${templateFilePath}`,
-      path: `memos/${title}.md`,
+      path: this.customPath || `${title}.md`,
       frontmatter: { title: title }
     };
+  }
+
+  setCustomPath(path?: string): void {
+    this.customPath = path;
   }
 }
 
@@ -106,15 +123,19 @@ suite('CreateMemoUseCase', () => {
   const testConfig: MemoConfig = {
     memoTypes: [
       {
+        id: 'daily',
         name: 'Daily Note',
         template: 'Daily template: {TITLE}'
       },
       {
+        id: 'meeting',
         name: 'Meeting Note',
         template: 'Meeting template: {TITLE}'
       }
     ],
-    defaultOutputDir: 'memos'
+    baseDir: 'memos',
+    fileExtensions: ['.md', '.markdown'],
+    defaultExtension: '.md'
   };
 
   setup(() => {
@@ -134,6 +155,7 @@ suite('CreateMemoUseCase', () => {
     assert.ok(writtenContent);
     assert.ok(writtenContent.includes('---'));
     assert.ok(writtenContent.includes('title: Test Title'));
+    assert.ok(writtenContent.includes('type: daily'));
     assert.ok(writtenContent.includes('Processed: Daily template: {TITLE}'));
     assert.ok(mockFileService.openedFiles.includes(expectedPath));
   });
@@ -157,6 +179,60 @@ suite('CreateMemoUseCase', () => {
       assert.ok(error instanceof Error);
       assert.ok(error.message.includes('not found'));
     }
+  });
+
+  test('should respect baseDir when template has path', async () => {
+    mockTemplateService.setCustomPath('daily/2025/06/28.md');
+
+    await useCase.execute('Daily Note', 'Test Title');
+
+    const expectedPath = '/test/workspace/memos/daily/2025/06/28.md';
+    const writtenContent = mockFileService.getWrittenContent(expectedPath);
+
+    assert.ok(writtenContent);
+    assert.ok(writtenContent.includes('title: Test Title'));
+    assert.ok(mockFileService.openedFiles.includes(expectedPath));
+  });
+
+  test('should use baseDir when template has no path', async () => {
+    mockTemplateService.setCustomPath(undefined);
+
+    await useCase.execute('Daily Note', 'Test Title');
+
+    const expectedPath = '/test/workspace/memos/Test Title.md';
+    const writtenContent = mockFileService.getWrittenContent(expectedPath);
+
+    assert.ok(writtenContent);
+    assert.ok(writtenContent.includes('title: Test Title'));
+    assert.ok(mockFileService.openedFiles.includes(expectedPath));
+  });
+
+  test('should work with different baseDir settings', async () => {
+    const customConfig: MemoConfig = {
+      memoTypes: [
+        {
+          id: 'daily',
+          name: 'Daily Note',
+          template: 'Daily template: {TITLE}'
+        }
+      ],
+      baseDir: 'notes',
+      fileExtensions: ['.md'],
+      defaultExtension: '.md'
+    };
+
+    mockConfigService = new MockConfigService(customConfig);
+    useCase = new CreateMemoUseCase(mockConfigService, mockFileService, mockTemplateService, mockWorkspaceService);
+    mockTemplateService.setCustomPath('daily/test.md');
+
+    await useCase.execute('Daily Note', 'Test Title');
+
+    const expectedPath = '/test/workspace/notes/daily/test.md';
+    const writtenContent = mockFileService.getWrittenContent(expectedPath);
+
+    assert.ok(writtenContent);
+    assert.ok(writtenContent.includes('title: Test Title'));
+    assert.ok(mockFileService.openedFiles.includes(expectedPath));
   });
 
 });
