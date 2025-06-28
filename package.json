@@ -45,8 +45,13 @@
         "command": "vsmemo.insertMemoLink",
         "title": "Insert Memo Link",
         "category": "VsMemo"
+      },
+      {
+        "command": "vsmemo.openMemoFromPreview",
+        "title": "Open Memo from Preview"
       }
     ],
+    "markdown.markdownItPlugins": true,
     "views": {
       "explorer": [
         {
