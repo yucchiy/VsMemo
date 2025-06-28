@@ -40,6 +40,11 @@
         "command": "vsmemo.createMemoFromType",
         "title": "Create New Memo",
         "icon": "$(add)"
+      },
+      {
+        "command": "vsmemo.insertMemoLink",
+        "title": "Insert Memo Link",
+        "category": "VsMemo"
       }
     ],
     "views": {

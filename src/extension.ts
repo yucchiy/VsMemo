@@ -5,7 +5,9 @@ import { createMemo } from './commands/createMemo';
 import { listMemos } from './commands/listMemos';
 import { commitChanges } from './commands/commitChanges';
 import { createMemoFromType } from './commands/createMemoFromType';
+import { insertMemoLink } from './commands/insertMemoLink';
 import { MemoTreeDataProvider } from './views/MemoTreeDataProvider';
+import { MemoLinkProvider, MemoLinkHoverProvider } from './providers/MemoLinkProvider';
 import { VsCodeConfigService } from './services/implementations/VsCodeConfigService';
 import { VsCodeFileService } from './services/implementations/VsCodeFileService';
 
@@ -25,11 +27,21 @@ export function activate(context: vscode.ExtensionContext) {
     showCollapseAll: true
   });
 
+  // Create memo link providers
+  const memoLinkProvider = new MemoLinkProvider(configService, fileService);
+  const memoLinkHoverProvider = new MemoLinkHoverProvider(configService, fileService);
+
+  // Register language features for markdown files
+  const markdownSelector: vscode.DocumentSelector = { scheme: 'file', language: 'markdown' };
+  const definitionProvider = vscode.languages.registerDefinitionProvider(markdownSelector, memoLinkProvider);
+  const hoverProvider = vscode.languages.registerHoverProvider(markdownSelector, memoLinkHoverProvider);
+
   // Register commands
   const createMemoDisposable = vscode.commands.registerCommand('vsmemo.createMemo', createMemo);
   const listMemosDisposable = vscode.commands.registerCommand('vsmemo.listMemos', listMemos);
   const commitChangesDisposable = vscode.commands.registerCommand('vsmemo.commitChanges', commitChanges);
   const createMemoFromTypeDisposable = vscode.commands.registerCommand('vsmemo.createMemoFromType', createMemoFromType);
+  const insertMemoLinkDisposable = vscode.commands.registerCommand('vsmemo.insertMemoLink', insertMemoLink);
   const refreshDisposable = vscode.commands.registerCommand('vsmemo.refreshMemoExplorer', () => {
     memoTreeProvider.refresh();
   });
@@ -39,8 +51,11 @@ export function activate(context: vscode.ExtensionContext) {
     listMemosDisposable,
     commitChangesDisposable,
     createMemoFromTypeDisposable,
+    insertMemoLinkDisposable,
     refreshDisposable,
-    treeView
+    treeView,
+    definitionProvider,
+    hoverProvider
   );
 }
 
