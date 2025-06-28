@@ -7,6 +7,8 @@ import { commitChanges } from './commands/commitChanges';
 import { createMemoFromType } from './commands/createMemoFromType';
 import { insertMemoLink } from './commands/insertMemoLink';
 import { openMemoFromPreview } from './commands/openMemoFromPreview';
+import { renameMemo } from './commands/renameMemo';
+import { deleteMemo } from './commands/deleteMemo';
 import { MemoTreeDataProvider } from './views/MemoTreeDataProvider';
 import { MemoLinkProvider, MemoLinkHoverProvider } from './providers/MemoLinkProvider';
 import { MemoLinkCompletionProvider } from './providers/MemoLinkCompletionProvider';
@@ -58,6 +60,8 @@ export function activate(context: vscode.ExtensionContext) {
   const createMemoFromTypeDisposable = vscode.commands.registerCommand('vsmemo.createMemoFromType', createMemoFromType);
   const insertMemoLinkDisposable = vscode.commands.registerCommand('vsmemo.insertMemoLink', insertMemoLink);
   const openMemoFromPreviewDisposable = vscode.commands.registerCommand('vsmemo.openMemoFromPreview', openMemoFromPreview);
+  const renameMemoDisposable = vscode.commands.registerCommand('vsmemo.renameMemo', renameMemo);
+  const deleteMemoDisposable = vscode.commands.registerCommand('vsmemo.deleteMemo', deleteMemo);
   const refreshDisposable = vscode.commands.registerCommand('vsmemo.refreshMemoExplorer', () => {
     memoTreeProvider.refresh();
   });
@@ -69,6 +73,8 @@ export function activate(context: vscode.ExtensionContext) {
     createMemoFromTypeDisposable,
     insertMemoLinkDisposable,
     openMemoFromPreviewDisposable,
+    renameMemoDisposable,
+    deleteMemoDisposable,
     refreshDisposable,
     treeView,
     definitionProvider,

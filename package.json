@@ -49,6 +49,16 @@
       {
         "command": "vsmemo.openMemoFromPreview",
         "title": "Open Memo from Preview"
+      },
+      {
+        "command": "vsmemo.renameMemo",
+        "title": "Rename Memo",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "vsmemo.deleteMemo",
+        "title": "Delete Memo",
+        "icon": "$(trash)"
       }
     ],
     "markdown.markdownItPlugins": true,
@@ -74,6 +84,16 @@
           "command": "vsmemo.createMemoFromType",
           "when": "view == vsmemoExplorer && viewItem == memoType",
           "group": "inline"
+        },
+        {
+          "command": "vsmemo.renameMemo",
+          "when": "view == vsmemoExplorer && viewItem == memoFile",
+          "group": "edit@1"
+        },
+        {
+          "command": "vsmemo.deleteMemo",
+          "when": "view == vsmemoExplorer && viewItem == memoFile",
+          "group": "edit@2"
         }
       ]
     }
