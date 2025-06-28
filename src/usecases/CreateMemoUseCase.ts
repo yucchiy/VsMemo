@@ -6,6 +6,7 @@ import { ITemplateService } from '../services/interfaces/ITemplateService';
 import { MemoType } from '../models/MemoType';
 import { VariableRegistry } from '../variables/VariableRegistry';
 import { formatDate } from '../utils/dateUtils';
+import { MemoEvents } from '../events/MemoEvents';
 
 export interface IWorkspaceService {
   getWorkspaceRoot(): string | undefined;
@@ -106,6 +107,10 @@ export class CreateMemoUseCase {
       content = `---\n${frontmatterString}\n---\n\n${content}`;
 
       await this.fileService.writeFile(fullPath, content);
+
+      // Fire memo created event for tree view refresh
+      const memoEvents = MemoEvents.getInstance();
+      memoEvents.fireMemoCreated(fullPath);
     }
 
     await this.fileService.openFile(fullPath);

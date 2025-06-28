@@ -30,8 +30,43 @@
         "command": "vsmemo.commitChanges",
         "title": "Commit Memo Changes",
         "category": "VsMemo"
+      },
+      {
+        "command": "vsmemo.refreshMemoExplorer",
+        "title": "Refresh",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "vsmemo.createMemoFromType",
+        "title": "Create New Memo",
+        "icon": "$(add)"
       }
-    ]
+    ],
+    "views": {
+      "explorer": [
+        {
+          "id": "vsmemoExplorer",
+          "name": "VsMemo",
+          "when": "workbenchState != empty"
+        }
+      ]
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "vsmemo.refreshMemoExplorer",
+          "when": "view == vsmemoExplorer",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "vsmemo.createMemoFromType",
+          "when": "view == vsmemoExplorer && viewItem == memoType",
+          "group": "inline"
+        }
+      ]
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
