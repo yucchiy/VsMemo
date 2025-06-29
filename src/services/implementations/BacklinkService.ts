@@ -1,5 +1,5 @@
 import * as path from 'path';
-import { IBacklinkService, Backlink, BacklinkIndex } from '../interfaces/IBacklinkService';
+import { IBacklinkService, Backlink, BacklinkIndex, OutboundLink } from '../interfaces/IBacklinkService';
 import { IFileService } from '../interfaces/IFileService';
 import { IConfigService } from '../interfaces/IConfigService';
 import { isValidMemoFile } from '../../utils/fileUtils';
@@ -118,6 +118,45 @@ export class BacklinkService implements IBacklinkService {
       averageLinksPerFile,
       mostLinkedFiles
     };
+  }
+
+  async getOutboundLinks(sourceFilePath: string): Promise<OutboundLink[]> {
+    const outboundLinks: OutboundLink[] = [];
+
+    try {
+      if (!(await this.fileService.exists(sourceFilePath))) {
+        return outboundLinks;
+      }
+
+      const content = await this.fileService.readFile(sourceFilePath);
+      const lines = content.split('\n');
+
+      const linkRegex = /\[([^\]]*)\]\(vsmemo:\/\/([^)]+)\)/g;
+
+      lines.forEach((line, lineIndex) => {
+        let match;
+        while ((match = linkRegex.exec(line)) !== null) {
+          const linkText = match[1];
+          const memoUri = match[2];
+
+          const targetPath = this.resolveMemoPath(memoUri);
+          if (targetPath) {
+            const context = this.getContext(lines, lineIndex);
+
+            outboundLinks.push({
+              targetFile: targetPath,
+              linkText,
+              sourceLine: lineIndex + 1,
+              context
+            });
+          }
+        }
+      });
+    } catch (error) {
+      console.warn(`Failed to get outbound links from ${sourceFilePath}:`, error);
+    }
+
+    return outboundLinks;
   }
 
   private async scanDirectory(dir: string): Promise<void> {

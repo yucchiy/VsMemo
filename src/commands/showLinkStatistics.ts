@@ -1,5 +1,5 @@
-import { BacklinkView } from '../views/BacklinkView';
+import { MemoInsightsView } from '../views/BacklinkView';
 
-export async function showLinkStatistics(backlinkView: BacklinkView): Promise<void> {
-  await backlinkView.showLinkStatistics();
+export async function showLinkStatistics(memoInsightsView: MemoInsightsView): Promise<void> {
+  await memoInsightsView.showLinkStatistics();
 }

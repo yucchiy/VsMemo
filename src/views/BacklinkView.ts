@@ -1,14 +1,17 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
-import { IBacklinkService, Backlink } from '../services/interfaces/IBacklinkService';
+import { IBacklinkService, Backlink, OutboundLink } from '../services/interfaces/IBacklinkService';
 
-export class BacklinkTreeItem extends vscode.TreeItem {
+export class MemoInsightsTreeItem extends vscode.TreeItem {
   constructor(
     public readonly label: string,
     public readonly collapsibleState: vscode.TreeItemCollapsibleState,
     public readonly backlink?: Backlink,
+    public readonly outboundLink?: OutboundLink,
     public readonly filePath?: string,
-    public readonly isFileGroup?: boolean
+    public readonly isFileGroup?: boolean,
+    public readonly isStatisticsItem?: boolean,
+    public readonly isOutboundGroup?: boolean
   ) {
     super(label, collapsibleState);
 
@@ -24,6 +27,18 @@ export class BacklinkTreeItem extends vscode.TreeItem {
       this.tooltip.appendCodeblock(backlink.context, 'markdown');
       this.description = `Line ${backlink.sourceLine}`;
       this.iconPath = new vscode.ThemeIcon('link');
+    } else if (outboundLink) {
+      // This is an outbound link item
+      this.command = {
+        command: 'vscode.open',
+        title: 'Open',
+        arguments: [vscode.Uri.file(outboundLink.targetFile)]
+      };
+      this.contextValue = 'outboundLink';
+      this.tooltip = new vscode.MarkdownString();
+      this.tooltip.appendCodeblock(outboundLink.context, 'markdown');
+      this.description = `Line ${outboundLink.sourceLine}`;
+      this.iconPath = new vscode.ThemeIcon('arrow-right');
     } else if (isFileGroup) {
       // This is a file group
       this.contextValue = 'backlinkFile';
@@ -31,16 +46,25 @@ export class BacklinkTreeItem extends vscode.TreeItem {
       const backlinkCount = this.collapsibleState === vscode.TreeItemCollapsibleState.Collapsed ?
         this.label.match(/\((\d+)\)$/)?.[1] || '0' : '0';
       this.description = `${backlinkCount} reference${parseInt(backlinkCount) !== 1 ? 's' : ''}`;
+    } else if (isStatisticsItem) {
+      // This is a statistics item
+      this.contextValue = 'statisticsItem';
+      this.iconPath = new vscode.ThemeIcon('graph');
+    } else if (isOutboundGroup) {
+      // This is outbound links group
+      this.contextValue = 'outboundGroup';
+      this.iconPath = new vscode.ThemeIcon('references');
     }
   }
 }
 
-export class BacklinkView implements vscode.TreeDataProvider<BacklinkTreeItem> {
-  private _onDidChangeTreeData: vscode.EventEmitter<BacklinkTreeItem | undefined | null | void> = new vscode.EventEmitter<BacklinkTreeItem | undefined | null | void>();
-  readonly onDidChangeTreeData: vscode.Event<BacklinkTreeItem | undefined | null | void> = this._onDidChangeTreeData.event;
+export class MemoInsightsView implements vscode.TreeDataProvider<MemoInsightsTreeItem> {
+  private _onDidChangeTreeData: vscode.EventEmitter<MemoInsightsTreeItem | undefined | null | void> = new vscode.EventEmitter<MemoInsightsTreeItem | undefined | null | void>();
+  readonly onDidChangeTreeData: vscode.Event<MemoInsightsTreeItem | undefined | null | void> = this._onDidChangeTreeData.event;
 
   private currentFile: string | undefined;
   private backlinks: Map<string, Backlink[]> = new Map();
+  private outboundLinks: OutboundLink[] = [];
   private isLoading = false;
 
   constructor(
@@ -84,9 +108,10 @@ export class BacklinkView implements vscode.TreeDataProvider<BacklinkTreeItem> {
 
   async updateForFile(filePath: string): Promise<void> {
     this.currentFile = filePath;
+    
+    // Load backlinks
     const backlinks = await this.backlinkService.getBacklinks(filePath);
-
-    // Group backlinks by source file
+    console.log(`[MemoInsights] Loaded ${backlinks.length} backlinks for ${filePath}`);
     this.backlinks.clear();
     backlinks.forEach(backlink => {
       const sourceFile = backlink.sourceFile;
@@ -96,35 +121,105 @@ export class BacklinkView implements vscode.TreeDataProvider<BacklinkTreeItem> {
       this.backlinks.get(sourceFile)!.push(backlink);
     });
 
+    // Load outbound links
+    this.outboundLinks = await this.backlinkService.getOutboundLinks(filePath);
+    console.log(`[MemoInsights] Loaded ${this.outboundLinks.length} outbound links for ${filePath}`);
+
     this._onDidChangeTreeData.fire();
   }
 
-  getTreeItem(element: BacklinkTreeItem): vscode.TreeItem {
+  getTreeItem(element: MemoInsightsTreeItem): vscode.TreeItem {
     return element;
   }
 
-  async getChildren(element?: BacklinkTreeItem): Promise<BacklinkTreeItem[]> {
+  async getChildren(element?: MemoInsightsTreeItem): Promise<MemoInsightsTreeItem[]> {
+    console.log(`[MemoInsights] getChildren called with element:`, element?.label || 'root');
+    
     if (this.isLoading) {
-      return [new BacklinkTreeItem('Loading...', vscode.TreeItemCollapsibleState.None)];
+      return [new MemoInsightsTreeItem('Loading...', vscode.TreeItemCollapsibleState.None)];
     }
 
     if (!this.currentFile) {
-      return [new BacklinkTreeItem('No file open', vscode.TreeItemCollapsibleState.None)];
+      return [new MemoInsightsTreeItem('No file open', vscode.TreeItemCollapsibleState.None)];
     }
 
     if (!element) {
-      // Root level - show files that contain backlinks
-      if (this.backlinks.size === 0) {
-        return [new BacklinkTreeItem('No backlinks found', vscode.TreeItemCollapsibleState.None)];
+      // Root level - show main sections
+      const items: MemoInsightsTreeItem[] = [];
+
+      // Note info section
+      if (this.currentFile) {
+        items.push(new MemoInsightsTreeItem(
+          'Note Information',
+          vscode.TreeItemCollapsibleState.Expanded,
+          undefined,
+          undefined,
+          'noteinfo',
+          false,
+          true
+        ));
       }
 
-      const items: BacklinkTreeItem[] = [];
+      // Backlinks section
+      const totalBacklinks = Array.from(this.backlinks.values()).reduce((sum, links) => sum + links.length, 0);
+      items.push(new MemoInsightsTreeItem(
+        `Backlinks (${totalBacklinks})`,
+        totalBacklinks > 0 ? vscode.TreeItemCollapsibleState.Expanded : vscode.TreeItemCollapsibleState.None,
+        undefined,
+        undefined,
+        'backlinks'
+      ));
+
+      // Outbound links section
+      items.push(new MemoInsightsTreeItem(
+        `Outbound Links (${this.outboundLinks.length})`,
+        this.outboundLinks.length > 0 ? vscode.TreeItemCollapsibleState.Expanded : vscode.TreeItemCollapsibleState.None,
+        undefined,
+        undefined,
+        'outbound',
+        false,
+        false,
+        true
+      ));
+
+      return items;
+    } else if (element.filePath === 'noteinfo') {
+      // Show note information
+      if (!this.currentFile) {
+        return [];
+      }
+
+      const items: MemoInsightsTreeItem[] = [];
+      try {
+        const fileName = path.basename(this.currentFile);
+        const workspaceFolders = vscode.workspace.workspaceFolders;
+        const relativePath = workspaceFolders && workspaceFolders.length > 0
+          ? path.relative(workspaceFolders[0].uri.fsPath, this.currentFile)
+          : fileName;
+        
+        items.push(new MemoInsightsTreeItem(`File: ${fileName}`, vscode.TreeItemCollapsibleState.None));
+        items.push(new MemoInsightsTreeItem(`Path: ${relativePath}`, vscode.TreeItemCollapsibleState.None));
+        items.push(new MemoInsightsTreeItem(`Backlinks: ${Array.from(this.backlinks.values()).reduce((sum, links) => sum + links.length, 0)}`, vscode.TreeItemCollapsibleState.None));
+        items.push(new MemoInsightsTreeItem(`Outbound Links: ${this.outboundLinks.length}`, vscode.TreeItemCollapsibleState.None));
+      } catch (error) {
+        items.push(new MemoInsightsTreeItem('Error loading note info', vscode.TreeItemCollapsibleState.None));
+      }
+
+      return items;
+    } else if (element.filePath === 'backlinks') {
+      // Show files that contain backlinks
+      if (this.backlinks.size === 0) {
+        return [new MemoInsightsTreeItem('No backlinks found', vscode.TreeItemCollapsibleState.None)];
+      }
+
+      const items: MemoInsightsTreeItem[] = [];
       this.backlinks.forEach((backlinks, sourceFile) => {
         const fileName = path.basename(sourceFile);
         const label = `${fileName} (${backlinks.length})`;
-        items.push(new BacklinkTreeItem(
+        items.push(new MemoInsightsTreeItem(
           label,
           vscode.TreeItemCollapsibleState.Expanded,
+          undefined,
           undefined,
           sourceFile,
           true
@@ -139,15 +234,32 @@ export class BacklinkView implements vscode.TreeDataProvider<BacklinkTreeItem> {
       });
 
       return items;
+    } else if (element.filePath === 'outbound') {
+      // Show outbound links
+      if (this.outboundLinks.length === 0) {
+        return [new MemoInsightsTreeItem('No outbound links found', vscode.TreeItemCollapsibleState.None)];
+      }
+
+      return this.outboundLinks.map(outboundLink => {
+        const fileName = path.basename(outboundLink.targetFile);
+        const label = outboundLink.linkText || fileName;
+        return new MemoInsightsTreeItem(
+          label,
+          vscode.TreeItemCollapsibleState.None,
+          undefined,
+          outboundLink
+        );
+      });
     } else if (element.isFileGroup && element.filePath) {
       // Show individual backlinks for a file
       const backlinks = this.backlinks.get(element.filePath) || [];
       return backlinks.map(backlink => {
         const label = backlink.linkText || 'Untitled link';
-        return new BacklinkTreeItem(
+        return new MemoInsightsTreeItem(
           label,
           vscode.TreeItemCollapsibleState.None,
           backlink,
+          undefined,
           element.filePath
         );
       });
@@ -182,57 +294,12 @@ export class BacklinkView implements vscode.TreeDataProvider<BacklinkTreeItem> {
   }
 
   async showLinkStatistics(): Promise<void> {
-    const stats = await this.backlinkService.getLinkStatistics();
-
-    const message = `
-**Link Statistics**
-
-- Total Links: ${stats.totalLinks}
-- Total Files: ${stats.totalFiles}
-- Average Links per File: ${stats.averageLinksPerFile.toFixed(2)}
-
-**Most Linked Files:**
-${stats.mostLinkedFiles.map((item, index) =>
-    `${index + 1}. ${path.basename(item.file)} (${item.count} links)`
-  ).join('\n')}
-    `;
-
-    const panel = vscode.window.createWebviewPanel(
-      'backlinkStats',
-      'Link Statistics',
-      vscode.ViewColumn.One,
-      {}
+    vscode.window.showInformationMessage(
+      'Link information is now available in the Memo Links tree view.'
     );
-
-    panel.webview.html = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <style>
-          body { 
-            font-family: var(--vscode-font-family); 
-            color: var(--vscode-foreground);
-            padding: 20px;
-          }
-          h2 { color: var(--vscode-foreground); }
-          ul { line-height: 1.6; }
-          .stat { margin: 10px 0; }
-        </style>
-      </head>
-      <body>
-        <h2>Link Statistics</h2>
-        <div class="stat"><strong>Total Links:</strong> ${stats.totalLinks}</div>
-        <div class="stat"><strong>Total Files:</strong> ${stats.totalFiles}</div>
-        <div class="stat"><strong>Average Links per File:</strong> ${stats.averageLinksPerFile.toFixed(2)}</div>
-        
-        <h3>Most Linked Files</h3>
-        <ol>
-          ${stats.mostLinkedFiles.map(item =>
-    `<li>${path.basename(item.file)} - ${item.count} links</li>`
-  ).join('')}
-        </ol>
-      </body>
-      </html>
-    `;
   }
 }
+
+// Backward compatibility aliases
+export const BacklinkView = MemoInsightsView;
+export const BacklinkTreeItem = MemoInsightsTreeItem;

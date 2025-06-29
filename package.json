@@ -121,8 +121,8 @@
           "when": "workbenchState != empty"
         },
         {
-          "id": "backlinkView",
-          "name": "Backlinks",
+          "id": "memoInsightsView",
+          "name": "Insight",
           "when": "workbenchState != empty"
         }
       ]
@@ -136,22 +136,22 @@
         },
         {
           "command": "vsmemo.refreshBacklinks",
-          "when": "view == backlinkView",
+          "when": "view == memoInsightsView",
           "group": "navigation"
         },
         {
           "command": "vsmemo.showOrphanedMemos",
-          "when": "view == backlinkView",
+          "when": "view == memoInsightsView",
           "group": "1_queries@1"
         },
         {
           "command": "vsmemo.showLinkStatistics",
-          "when": "view == backlinkView",
+          "when": "view == memoInsightsView",
           "group": "1_queries@2"
         },
         {
           "command": "vsmemo.showGraph",
-          "when": "view == backlinkView",
+          "when": "view == memoInsightsView",
           "group": "1_queries@3"
         }
       ],

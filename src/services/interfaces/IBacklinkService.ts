@@ -9,6 +9,14 @@ export interface BacklinkIndex {
   [targetPath: string]: Backlink[];
 }
 
+export interface OutboundLink {
+  targetFile: string;
+  linkText: string;
+  sourceLine: number;
+  context: string;
+}
+
+
 export interface IBacklinkService {
   /**
    * Build or rebuild the backlink index for all memo files
@@ -44,4 +52,9 @@ export interface IBacklinkService {
     averageLinksPerFile: number;
     mostLinkedFiles: Array<{ file: string; count: number }>;
   }>;
+
+  /**
+   * Get outbound links from a specific file
+   */
+  getOutboundLinks(sourceFilePath: string): Promise<OutboundLink[]>;
 }

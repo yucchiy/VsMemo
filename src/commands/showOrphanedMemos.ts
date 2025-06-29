@@ -1,5 +1,5 @@
-import { BacklinkView } from '../views/BacklinkView';
+import { MemoInsightsView } from '../views/BacklinkView';
 
-export async function showOrphanedMemos(backlinkView: BacklinkView): Promise<void> {
+export async function showOrphanedMemos(backlinkView: MemoInsightsView): Promise<void> {
   await backlinkView.showOrphanedFiles();
 }

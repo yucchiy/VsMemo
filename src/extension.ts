@@ -15,7 +15,7 @@ import { showOrphanedMemos } from './commands/showOrphanedMemos';
 import { showLinkStatistics } from './commands/showLinkStatistics';
 import { showGraph } from './commands/showGraph';
 import { MemoTreeDataProvider } from './views/MemoTreeDataProvider';
-import { BacklinkView } from './views/BacklinkView';
+import { MemoInsightsView } from './views/BacklinkView';
 import { GraphView } from './views/GraphView';
 import { MemoLinkProvider, MemoLinkHoverProvider } from './providers/MemoLinkProvider';
 import { MemoLinkCompletionProvider } from './providers/MemoLinkCompletionProvider';
@@ -49,10 +49,10 @@ export function activate(context: vscode.ExtensionContext) {
     showCollapseAll: true
   });
 
-  // Create backlink view
-  const backlinkView = new BacklinkView(backlinkService);
-  const backlinkTreeView = vscode.window.createTreeView('backlinkView', {
-    treeDataProvider: backlinkView,
+  // Create memo insights view
+  const memoInsightsView = new MemoInsightsView(backlinkService);
+  const memoInsightsTreeView = vscode.window.createTreeView('memoInsightsView', {
+    treeDataProvider: memoInsightsView,
     showCollapseAll: true
   });
 
@@ -96,9 +96,9 @@ export function activate(context: vscode.ExtensionContext) {
     memoTreeProvider.refresh();
   });
   const showBacklinksDisposable = vscode.commands.registerCommand('vsmemo.showBacklinks', showBacklinks);
-  const refreshBacklinksDisposable = vscode.commands.registerCommand('vsmemo.refreshBacklinks', () => refreshBacklinks(backlinkView));
-  const showOrphanedMemosDisposable = vscode.commands.registerCommand('vsmemo.showOrphanedMemos', () => showOrphanedMemos(backlinkView));
-  const showLinkStatisticsDisposable = vscode.commands.registerCommand('vsmemo.showLinkStatistics', () => showLinkStatistics(backlinkView));
+  const refreshBacklinksDisposable = vscode.commands.registerCommand('vsmemo.refreshBacklinks', () => refreshBacklinks(memoInsightsView));
+  const showOrphanedMemosDisposable = vscode.commands.registerCommand('vsmemo.showOrphanedMemos', () => showOrphanedMemos(memoInsightsView));
+  const showLinkStatisticsDisposable = vscode.commands.registerCommand('vsmemo.showLinkStatistics', () => showLinkStatistics(memoInsightsView));
   const showGraphDisposable = vscode.commands.registerCommand('vsmemo.showGraph', () => showGraph(graphView));
 
   context.subscriptions.push(
@@ -117,7 +117,7 @@ export function activate(context: vscode.ExtensionContext) {
     showLinkStatisticsDisposable,
     showGraphDisposable,
     treeView,
-    backlinkTreeView,
+    memoInsightsTreeView,
     definitionProvider,
     hoverProvider,
     completionProvider
