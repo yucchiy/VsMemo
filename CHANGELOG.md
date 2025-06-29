@@ -176,6 +176,17 @@ If you have existing `.vsmemo/types.json` configuration:
 
 And create the template file at `.vsmemo/templates/daily.md`.
 
+## [0.3.1] - 2025-06-30
+
+### Changed
+- Remove automatic default memo types configuration
+- Configuration now returns empty `memoTypes` array when no types are defined
+- Improved error messages when no memo types are configured
+
+### Fixed
+- Users are no longer forced to use predefined memo types
+- Better user experience when starting from scratch
+
 ## [Unreleased]
 
 ### Planned

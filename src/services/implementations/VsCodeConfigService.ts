@@ -10,13 +10,13 @@ export class VsCodeConfigService implements IConfigService {
   async loadConfig(): Promise<MemoConfig> {
     const workspaceFolder = this.getWorkspaceRoot();
     if (!workspaceFolder) {
-      return this.getDefaultConfig();
+      return this.getMinimalConfig();
     }
 
     const configPath = path.join(workspaceFolder, '.vsmemo', 'types.json');
 
     if (!(await this.fileService.exists(configPath))) {
-      return this.getDefaultConfig();
+      return this.getMinimalConfig();
     }
 
     try {
@@ -24,8 +24,8 @@ export class VsCodeConfigService implements IConfigService {
       const config: unknown = JSON.parse(configContent);
       return this.validateAndFixConfig(config);
     } catch (error) {
-      console.warn('Failed to load memo config, using default:', error);
-      return this.getDefaultConfig();
+      console.warn('Failed to load memo config, using minimal config:', error);
+      return this.getMinimalConfig();
     }
   }
 
@@ -36,52 +36,56 @@ export class VsCodeConfigService implements IConfigService {
 
   private validateAndFixConfig(config: unknown): MemoConfig {
     if (!this.isObject(config)) {
-      console.warn('Invalid config format, using default config');
-      return this.getDefaultConfig();
+      console.warn('Invalid config format, using minimal config');
+      return this.getMinimalConfig();
     }
 
-    if (!('memoTypes' in config) || !Array.isArray(config.memoTypes)) {
-      console.warn('memoTypes is not an array, using default config');
-      return this.getDefaultConfig();
-    }
-
-    if (config.memoTypes.length === 0) {
-      console.warn('memoTypes is empty, using default config');
-      return this.getDefaultConfig();
-    }
-
-    for (const memoType of config.memoTypes) {
-      if (!this.isValidMemoType(memoType)) {
-        console.warn('Invalid memo type object, using default config');
-        return this.getDefaultConfig();
+    // Allow missing or empty memoTypes - don't force defaults
+    let memoTypes: any[] = [];
+    if ('memoTypes' in config && Array.isArray(config.memoTypes)) {
+      // Validate each memo type
+      for (const memoType of config.memoTypes) {
+        if (this.isValidMemoType(memoType)) {
+          memoTypes.push(memoType);
+        } else {
+          console.warn('Invalid memo type object, skipping:', memoType);
+        }
       }
     }
 
     const validatedConfig = config as {
-      memoTypes: unknown[];
       baseDir?: unknown;
       fileExtensions?: unknown;
       defaultExtension?: unknown;
     };
 
+    // Set validated memoTypes
+    const result: any = { memoTypes };
+
     if (!('baseDir' in validatedConfig) || typeof validatedConfig.baseDir !== 'string') {
       console.warn('baseDir missing or invalid, using default value');
-      validatedConfig.baseDir = '.';
+      result.baseDir = '.';
+    } else {
+      result.baseDir = validatedConfig.baseDir;
     }
 
     if (!('fileExtensions' in validatedConfig) || !Array.isArray(validatedConfig.fileExtensions) ||
         !validatedConfig.fileExtensions.every(ext => typeof ext === 'string' && ext.startsWith('.'))) {
       console.warn('fileExtensions missing or invalid, using default value');
-      validatedConfig.fileExtensions = ['.md', '.markdown'];
+      result.fileExtensions = ['.md', '.markdown'];
+    } else {
+      result.fileExtensions = validatedConfig.fileExtensions;
     }
 
     if (!('defaultExtension' in validatedConfig) || typeof validatedConfig.defaultExtension !== 'string' ||
         !validatedConfig.defaultExtension.startsWith('.')) {
       console.warn('defaultExtension missing or invalid, using default value');
-      validatedConfig.defaultExtension = '.md';
+      result.defaultExtension = '.md';
+    } else {
+      result.defaultExtension = validatedConfig.defaultExtension;
     }
 
-    return validatedConfig as MemoConfig;
+    return result as MemoConfig;
   }
 
   private isObject(value: unknown): value is Record<string, unknown> {
@@ -108,20 +112,9 @@ export class VsCodeConfigService implements IConfigService {
     return true;
   }
 
-  private getDefaultConfig(): MemoConfig {
+  private getMinimalConfig(): MemoConfig {
     return {
-      memoTypes: [
-        {
-          id: 'daily',
-          name: 'Daily Note',
-          templatePath: 'templates/daily.md'
-        },
-        {
-          id: 'meeting',
-          name: 'Meeting Note',
-          templatePath: 'templates/meeting.md'
-        }
-      ],
+      memoTypes: [],
       baseDir: '.',
       fileExtensions: ['.md', '.markdown'],
       defaultExtension: '.md'
