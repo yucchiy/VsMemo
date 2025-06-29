@@ -9,12 +9,18 @@ import { insertMemoLink } from './commands/insertMemoLink';
 import { openMemoFromPreview } from './commands/openMemoFromPreview';
 import { renameMemo } from './commands/renameMemo';
 import { deleteMemo } from './commands/deleteMemo';
+import { showBacklinks } from './commands/showBacklinks';
+import { refreshBacklinks } from './commands/refreshBacklinks';
+import { showOrphanedMemos } from './commands/showOrphanedMemos';
+import { showLinkStatistics } from './commands/showLinkStatistics';
 import { MemoTreeDataProvider } from './views/MemoTreeDataProvider';
+import { BacklinkView } from './views/BacklinkView';
 import { MemoLinkProvider, MemoLinkHoverProvider } from './providers/MemoLinkProvider';
 import { MemoLinkCompletionProvider } from './providers/MemoLinkCompletionProvider';
 import { MemoMarkdownPreviewProvider } from './providers/MemoMarkdownItPlugin';
 import { VsCodeConfigService } from './services/implementations/VsCodeConfigService';
 import { VsCodeFileService } from './services/implementations/VsCodeFileService';
+import { BacklinkService } from './services/implementations/BacklinkService';
 
 export function activate(context: vscode.ExtensionContext) {
   console.log('VsMemo extension is now active!');
@@ -22,6 +28,15 @@ export function activate(context: vscode.ExtensionContext) {
   // Initialize services
   const fileService = new VsCodeFileService();
   const configService = new VsCodeConfigService(fileService);
+
+  // Get workspace root
+  const workspaceFolders = vscode.workspace.workspaceFolders;
+  const workspaceRoot = workspaceFolders && workspaceFolders.length > 0
+    ? workspaceFolders[0].uri.fsPath
+    : '';
+
+  // Create backlink service
+  const backlinkService = new BacklinkService(fileService, configService, workspaceRoot);
 
   // Create memo tree data provider
   const memoTreeProvider = new MemoTreeDataProvider(configService, fileService);
@@ -31,6 +46,16 @@ export function activate(context: vscode.ExtensionContext) {
     treeDataProvider: memoTreeProvider,
     showCollapseAll: true
   });
+
+  // Create backlink view
+  const backlinkView = new BacklinkView(backlinkService);
+  const backlinkTreeView = vscode.window.createTreeView('backlinkView', {
+    treeDataProvider: backlinkView,
+    showCollapseAll: true
+  });
+
+  // Initialize backlink index
+  backlinkService.buildIndex().catch(console.error);
 
   // Create memo link providers
   const memoLinkProvider = new MemoLinkProvider(configService, fileService);
@@ -65,6 +90,10 @@ export function activate(context: vscode.ExtensionContext) {
   const refreshDisposable = vscode.commands.registerCommand('vsmemo.refreshMemoExplorer', () => {
     memoTreeProvider.refresh();
   });
+  const showBacklinksDisposable = vscode.commands.registerCommand('vsmemo.showBacklinks', showBacklinks);
+  const refreshBacklinksDisposable = vscode.commands.registerCommand('vsmemo.refreshBacklinks', () => refreshBacklinks(backlinkView));
+  const showOrphanedMemosDisposable = vscode.commands.registerCommand('vsmemo.showOrphanedMemos', () => showOrphanedMemos(backlinkView));
+  const showLinkStatisticsDisposable = vscode.commands.registerCommand('vsmemo.showLinkStatistics', () => showLinkStatistics(backlinkView));
 
   context.subscriptions.push(
     createMemoDisposable,
@@ -76,7 +105,12 @@ export function activate(context: vscode.ExtensionContext) {
     renameMemoDisposable,
     deleteMemoDisposable,
     refreshDisposable,
+    showBacklinksDisposable,
+    refreshBacklinksDisposable,
+    showOrphanedMemosDisposable,
+    showLinkStatisticsDisposable,
     treeView,
+    backlinkTreeView,
     definitionProvider,
     hoverProvider,
     completionProvider

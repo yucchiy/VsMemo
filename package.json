@@ -59,6 +59,26 @@
         "command": "vsmemo.deleteMemo",
         "title": "Delete Memo",
         "icon": "$(trash)"
+      },
+      {
+        "command": "vsmemo.showBacklinks",
+        "title": "Show Backlinks",
+        "category": "VsMemo"
+      },
+      {
+        "command": "vsmemo.refreshBacklinks",
+        "title": "Refresh Backlink Index",
+        "icon": "$(sync)"
+      },
+      {
+        "command": "vsmemo.showOrphanedMemos",
+        "title": "Show Orphaned Memos",
+        "category": "VsMemo"
+      },
+      {
+        "command": "vsmemo.showLinkStatistics",
+        "title": "Show Link Statistics",
+        "category": "VsMemo"
       }
     ],
     "markdown.markdownItPlugins": true,
@@ -67,6 +87,11 @@
         {
           "id": "vsmemoExplorer",
           "name": "VsMemo",
+          "when": "workbenchState != empty"
+        },
+        {
+          "id": "backlinkView",
+          "name": "Backlinks",
           "when": "workbenchState != empty"
         }
       ]
@@ -77,6 +102,21 @@
           "command": "vsmemo.refreshMemoExplorer",
           "when": "view == vsmemoExplorer",
           "group": "navigation"
+        },
+        {
+          "command": "vsmemo.refreshBacklinks",
+          "when": "view == backlinkView",
+          "group": "navigation"
+        },
+        {
+          "command": "vsmemo.showOrphanedMemos",
+          "when": "view == backlinkView",
+          "group": "1_queries@1"
+        },
+        {
+          "command": "vsmemo.showLinkStatistics",
+          "when": "view == backlinkView",
+          "group": "1_queries@2"
         }
       ],
       "view/item/context": [
