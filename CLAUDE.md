@@ -288,6 +288,8 @@ Note: MemoTreeDataProvider and language providers would benefit from additional 
 - Compilation must succeed before tests run
 - ESLint must pass before tests run
 
+**CRITICAL: All tests must pass before any commit. No exceptions.**
+
 ### Test Debugging Tips
 
 1. **VS Code API Read-Only Properties**: Cannot mock `vscode.workspace.workspaceFolders` directly
@@ -302,6 +304,28 @@ Note: MemoTreeDataProvider and language providers would benefit from additional 
    - Verify correct data was written (state)
 
 ## Development Rules
+
+### Critical Testing Rules
+
+**🚨 NEVER DISABLE OR SKIP TESTS 🚨**
+
+- **NEVER** move tests to a "test-disabled" directory
+- **NEVER** exclude test files from compilation in tsconfig.json
+- **NEVER** comment out or skip failing tests
+- **ALWAYS** fix tests when interfaces or implementations change
+- **ALWAYS** ensure `npm test` passes before committing any changes
+
+**When interfaces change:**
+1. Update test mocks and interfaces to match new signatures
+2. Fix any type errors in test files
+3. Verify all tests pass before proceeding
+4. Add tests for new functionality immediately
+
+**Test failure policy:**
+- Failing tests indicate real problems that must be addressed
+- Fix the test or fix the implementation - never disable the test
+- If a test becomes obsolete, replace it with a relevant test
+- Maintain test coverage as the codebase evolves
 
 ### Git Workflow
 
@@ -359,6 +383,7 @@ When asked to implement a feature:
 - **Interface-First**: Always define interfaces before implementations
 - **Test-Driven**: Write tests for all new functionality
 - **Clean Architecture**: Follow the established layered architecture pattern
+- **Test-First**: When changing interfaces, update tests IMMEDIATELY, not later
 
 ### Dependencies
 
