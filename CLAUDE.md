@@ -4,7 +4,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-VsMemo is a VS Code extension for memo management with template system. The extension allows users to create Markdown memos using configurable types and templates with variable substitution.
+VsMemo is a comprehensive VS Code extension for memo management with advanced linking and visualization capabilities. The extension provides:
+
+- **Template-based memo creation** with variable substitution
+- **Cross-memo linking** with custom `vsmemo://` URI scheme
+- **Backlink tracking** and orphaned file detection
+- **Interactive graph visualization** of memo relationships
+- **Explorer integration** with rename/delete operations
+- **Markdown preview support** for custom links
+- **IntelliSense completion** for memo paths
 
 ## Development Commands
 
@@ -20,38 +28,65 @@ VsMemo is a VS Code extension for memo management with template system. The exte
 ```
 src/
 ├── models/              # Core data structures
-│   ├── MemoType.ts
-│   ├── MemoConfig.ts
-│   └── Template.ts
+│   ├── MemoType.ts      # Memo type definitions
+│   ├── MemoConfig.ts    # Configuration model
+│   ├── Template.ts      # Template structure
+│   └── Variable.ts      # Variable definitions
 ├── services/
 │   ├── interfaces/      # Service contracts
-│   │   ├── IConfigService.ts
-│   │   ├── IFileService.ts
-│   │   └── ITemplateService.ts
+│   │   ├── IConfigService.ts     # Configuration access
+│   │   ├── IFileService.ts       # File operations
+│   │   ├── ITemplateService.ts   # Template processing
+│   │   ├── IGitService.ts        # Git operations
+│   │   └── IBacklinkService.ts   # Backlink management
 │   └── implementations/ # Service implementations
 │       ├── VsCodeConfigService.ts
 │       ├── VsCodeFileService.ts
-│       └── TemplateService.ts
+│       ├── TemplateService.ts
+│       ├── BacklinkService.ts
+│       └── [Git services...]
+├── providers/           # VS Code language providers
+│   ├── MemoLinkProvider.ts           # Go-to-definition for vsmemo:// links
+│   ├── MemoLinkCompletionProvider.ts # IntelliSense for memo paths
+│   └── MemoMarkdownItPlugin.ts       # Markdown preview support
+├── views/               # Custom VS Code views
+│   ├── MemoTreeDataProvider.ts   # Explorer tree view
+│   ├── BacklinkView.ts           # Backlink tree view
+│   └── GraphView.ts              # Interactive graph visualization
+├── commands/            # VS Code commands (13 commands)
+│   ├── createMemo.ts, createMemoFromType.ts
+│   ├── insertMemoLink.ts, openMemoFromPreview.ts
+│   ├── renameMemo.ts, deleteMemo.ts
+│   ├── showBacklinks.ts, refreshBacklinks.ts
+│   ├── showOrphanedMemos.ts, showLinkStatistics.ts
+│   ├── showGraph.ts
+│   └── [others...]
 ├── usecases/            # Application logic
-│   └── CreateMemoUseCase.ts
-├── commands/            # VS Code commands
-│   └── createMemo.ts
+│   ├── CreateMemoUseCase.ts
+│   └── ListMemosUseCase.ts
 ├── utils/               # Utility functions
-│   ├── dateUtils.ts
-│   └── pathUtils.ts
+│   ├── dateUtils.ts, pathUtils.ts
+│   ├── fileUtils.ts, variableUtils.ts
+├── variables/           # Variable system
+│   ├── IVariable.ts, SystemVariable.ts
+│   ├── UserDefinedVariable.ts
+│   ├── VariableRegistry.ts
+│   └── systemVariables.ts
+├── events/              # Event system
+│   └── MemoEvents.ts
 ├── extension.ts         # Extension entry point
-└── test/               # Test suites
-    ├── utils/
-    ├── services/
-    ├── usecases/
-    └── commands/
+└── test/               # Comprehensive test suites
+    ├── utils/, services/, usecases/
+    ├── commands/, variables/
+    └── extension.test.ts
 ```
 
-Key files:
-- `package.json` - Extension manifest defining commands and metadata
+Key files and directories:
+- `package.json` - Extension manifest (13 commands, 2 tree views, 3 dependencies)
+- `media/` - Local graph visualization libraries (cytoscape.js)
 - `out/` - Compiled JavaScript output (excluded by .gitignore)
 - `node_modules/` - Dependencies (excluded by .gitignore)
-- `package-lock.json` - Dependency lock file (excluded by .gitignore)
+- `.vsmemo/types.json` - User configuration file
 
 ## Architecture
 
@@ -75,10 +110,43 @@ The extension follows a **layered architecture** with **dependency injection** f
 
 ### Core Features
 
-- **Memo Creation**: Template-based memo generation with variable substitution
-- **Configuration**: `.vsmemo/types.json` defines memo types and templates
-- **Templates**: Support for `{YEAR}`, `{MONTH}`, `{DAY}`, `{DATE}`, `{TITLE}` variables
-- **File Management**: Automatic directory creation, existing file detection
+#### 1. Memo Management
+- **Template-based Creation**: Generate memos using configurable types and templates
+- **Variable Substitution**: Support for system (`{YEAR}`, `{MONTH}`, `{DAY}`, `{DATE}`, `{TITLE}`) and user-defined variables
+- **File Operations**: Rename, delete memo files via Explorer context menu
+- **Configuration**: `.vsmemo/types.json` defines memo types, templates, and settings
+
+#### 2. Cross-Memo Linking System
+- **Custom URI Scheme**: `vsmemo://path/to/memo.md` for cross-references
+- **Go-to-Definition**: Navigate to linked memos with VS Code's standard navigation
+- **Hover Information**: Preview memo content on link hover
+- **IntelliSense Completion**: Auto-complete memo paths in Markdown files
+- **Markdown Preview Support**: Clickable links in preview mode
+- **Link Insertion Command**: Interactive memo selection for link creation
+
+#### 3. Backlink Analysis
+- **Backlink Tracking**: Automatic indexing of all memo cross-references
+- **Backlink View**: Tree view showing which files reference the current memo
+- **Orphaned File Detection**: Find memos with no incoming links
+- **Link Statistics**: Analytics on memo connectivity and relationships
+- **Real-time Updates**: Dynamic updates on file save and edit
+
+#### 4. Graph Visualization
+- **Interactive Graph**: Cytoscape.js-powered visualization of memo relationships
+- **Display Modes**: 
+  - **Focus Mode**: Active file + directly connected memos
+  - **Context Mode**: Active file + 2 degrees of separation
+  - **Full Mode**: Complete memo network
+- **Active File Tracking**: Graph automatically updates when switching files
+- **Visual Highlighting**: Active file emphasized with orange border and larger size
+- **Local Libraries**: Self-contained without CDN dependencies
+
+#### 5. VS Code Integration
+- **Explorer Views**: Two custom tree views (VsMemo, Backlinks)
+- **Command Palette**: 13 commands for memo operations
+- **Language Providers**: Definition, hover, and completion for Markdown files
+- **Context Menus**: Right-click operations in Explorer
+- **Markdown Extension**: Enhanced preview with custom link support
 
 ## TypeScript Configuration
 
@@ -183,10 +251,14 @@ test('should create memo with specified type and title', async () => {
 ### Test Coverage
 
 Current test suite covers:
-- **Utilities** (dateUtils, pathUtils) - 11 tests
-- **Services** (TemplateService) - 7 tests  
-- **Use Cases** (CreateMemoUseCase) - 3 tests
-- **Total**: 21 tests passing
+- **12 test files** across utilities, services, use cases, commands, and variables
+- **Utilities**: dateUtils, pathUtils, fileUtils, variableUtils
+- **Services**: TemplateService, VsCodeConfigService  
+- **Use Cases**: CreateMemoUseCase, ListMemosUseCase
+- **Variables**: SystemVariable, UserDefinedVariable, VariableRegistry
+- **Integration**: extension.test.ts
+
+Note: Advanced features like BacklinkService, GraphView, and providers would benefit from additional test coverage as the project scales.
 
 ### Running Tests
 
@@ -269,7 +341,105 @@ When asked to implement a feature:
 
 ### Dependencies
 
+Current dependencies (3 runtime + dev dependencies):
+- **cytoscape**: ^3.32.0 - Graph visualization library
+- **cytoscape-cose-bilkent**: ^4.1.0 - Advanced graph layout algorithm
+- **simple-git**: ^3.28.0 - Git operations for memo management
+
+Development dependencies include TypeScript, ESLint, Mocha, and VS Code testing tools.
+
 - Dependencies are managed via npm and excluded from version control
 - Run `npm install` after cloning to install dependencies
 - `package-lock.json` is excluded to avoid unnecessary version conflicts
 - Only commit `package.json` for dependency management
+- Local copies of graph libraries stored in `media/` for offline use
+
+## Development Patterns and Conventions
+
+### Implementation Approach
+
+When implementing new features, follow this pattern:
+
+1. **Service-First Design**: Start with interface definitions in `services/interfaces/`
+2. **Provider Integration**: Use VS Code providers for language features
+3. **View Components**: Create custom views for complex UI interactions
+4. **Command Registration**: Add commands to `package.json` and register in `extension.ts`
+5. **Testing**: Include comprehensive tests mirroring the source structure
+
+### Feature Development Workflow
+
+Based on the successful implementation of linking and graph features:
+
+1. **Incremental Implementation**: Build features step-by-step with user feedback
+2. **Debug-Friendly Development**: Include extensive logging for troubleshooting
+3. **Real-time Updates**: Implement event-driven updates for responsive UI
+4. **Error Handling**: Provide graceful fallbacks and user-friendly error messages
+5. **Performance Considerations**: Use efficient algorithms for large memo collections
+
+### VS Code Extension Patterns
+
+- **WebView Usage**: For complex visualizations (GraphView with Cytoscape.js)
+- **Tree Data Providers**: For hierarchical data display (Explorer views)
+- **Language Providers**: For editor integrations (links, completion, hover)
+- **Command Registration**: For user-accessible actions
+- **Event Listeners**: For reactive behavior (file changes, active editor changes)
+
+## Current Project Status
+
+### Implemented Features (Complete)
+
+✅ **Core Memo Management**
+- Template-based memo creation with variable substitution
+- Explorer tree view with type-based organization
+- File operations (rename, delete) via context menu
+
+✅ **Cross-Memo Linking System**
+- Custom `vsmemo://` URI scheme with proper encoding
+- Go-to-definition navigation
+- Hover information with content preview
+- IntelliSense completion for memo paths
+- Markdown preview support for clickable links
+- Interactive link insertion command
+
+✅ **Backlink Analysis**
+- Comprehensive backlink indexing and tracking
+- Real-time backlink view with file grouping
+- Orphaned file detection and listing
+- Link statistics and analytics
+- Automatic updates on file changes
+
+✅ **Interactive Graph Visualization**
+- Cytoscape.js-powered relationship graph
+- Three display modes (Focus/Context/Full)
+- Active file tracking with visual highlighting
+- Local library loading (no CDN dependencies)
+- Toolbar controls for mode switching
+- Real-time updates on file navigation
+
+### Technical Achievements
+
+- **13 VS Code commands** registered and functional
+- **2 custom tree views** (VsMemo Explorer, Backlinks)
+- **3 language providers** (Definition, Hover, Completion)
+- **Advanced WebView integration** with bidirectional messaging
+- **Comprehensive service architecture** with dependency injection
+- **Event-driven updates** throughout the application
+
+### Development Approach Evolution
+
+The project has evolved from a simple template-based memo creator to a comprehensive memo management system with advanced visualization capabilities. The development approach has successfully incorporated:
+
+1. **User Feedback Integration**: Features refined based on real-time testing feedback
+2. **Incremental Complexity**: Built complex features step-by-step
+3. **Debug-First Development**: Extensive logging for troubleshooting
+4. **Performance Awareness**: Efficient algorithms for large memo collections
+5. **VS Code Best Practices**: Proper use of extension APIs and patterns
+
+### Future Development Considerations
+
+When adding new features, consider:
+- **Testing Coverage**: Add tests for BacklinkService, GraphView, and providers
+- **Performance Optimization**: Implement caching for large memo collections  
+- **User Experience**: Add more customization options for graph visualization
+- **Integration**: Consider additional export/import formats
+- **Accessibility**: Ensure graph view works with screen readers
