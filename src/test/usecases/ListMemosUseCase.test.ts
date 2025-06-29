@@ -35,8 +35,24 @@ class MockFileService implements IFileService {
     this.files.set(path, content);
   }
 
+  async deleteFile(path: string): Promise<void> {
+    this.files.delete(path);
+  }
+
   async createDirectory(path: string): Promise<void> {
     this.directories.add(path);
+  }
+
+  async openTextDocument(path: string): Promise<void> {
+    this.openedFiles.push(path);
+  }
+
+  async showTextDocument(path: string): Promise<void> {
+    this.openedFiles.push(path);
+  }
+
+  async listFiles(dirPath: string, extensions: string[]): Promise<string[]> {
+    return [];
   }
 
   async openFile(path: string): Promise<void> {
@@ -136,8 +152,8 @@ suite('ListMemosUseCase', () => {
 
   const testConfig: MemoConfig = {
     memoTypes: [
-      { id: 'daily', name: 'Daily Note', template: 'daily.md' },
-      { id: 'meeting', name: 'Meeting Note', template: 'meeting.md' }
+      { id: 'daily', name: 'Daily Note', templatePath: 'daily.md' },
+      { id: 'meeting', name: 'Meeting Note', templatePath: 'meeting.md' }
     ],
     baseDir: 'memos',
     fileExtensions: ['.md', '.markdown'],

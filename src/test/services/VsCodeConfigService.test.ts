@@ -26,7 +26,21 @@ class MockFileService implements IFileService {
     this.files.set(path, content);
   }
 
+  async deleteFile(path: string): Promise<void> {
+    this.files.delete(path);
+  }
+
   async createDirectory(path: string): Promise<void> {
+  }
+
+  async openTextDocument(path: string): Promise<void> {
+  }
+
+  async showTextDocument(path: string): Promise<void> {
+  }
+
+  async listFiles(dirPath: string, extensions: string[]): Promise<string[]> {
+    return [];
   }
 
   async openFile(path: string): Promise<void> {
@@ -62,9 +76,7 @@ suite('VsCodeConfigService', () => {
     test('should return default config when file does not exist', async () => {
       const config = await configService.loadConfig();
 
-      assert.strictEqual(config.memoTypes.length, 2);
-      assert.strictEqual(config.memoTypes[0].id, 'daily');
-      assert.strictEqual(config.memoTypes[1].id, 'meeting');
+      assert.strictEqual(config.memoTypes.length, 0);
       assert.strictEqual(config.baseDir, '.');
     });
 
@@ -74,7 +86,7 @@ suite('VsCodeConfigService', () => {
 
       const config = await configService.loadConfig();
 
-      assert.strictEqual(config.memoTypes.length, 2);
+      assert.strictEqual(config.memoTypes.length, 0);
       assert.strictEqual(config.baseDir, '.');
     });
 
@@ -84,9 +96,9 @@ suite('VsCodeConfigService', () => {
 
       const config = await configService.loadConfig();
 
-      // When memoTypes is missing, returns default config
-      assert.strictEqual(config.memoTypes.length, 2);
-      assert.strictEqual(config.baseDir, '.');
+      // When memoTypes is missing, returns empty array, but baseDir is preserved
+      assert.strictEqual(config.memoTypes.length, 0);
+      assert.strictEqual(config.baseDir, 'notes');
     });
 
     test('should handle empty memoTypes array', async () => {
@@ -95,19 +107,19 @@ suite('VsCodeConfigService', () => {
 
       const config = await configService.loadConfig();
 
-      // When memoTypes is empty, returns default config
-      assert.strictEqual(config.memoTypes.length, 2);
-      assert.strictEqual(config.baseDir, '.');
+      // When memoTypes is empty, returns empty array
+      assert.strictEqual(config.memoTypes.length, 0);
+      assert.strictEqual(config.baseDir, 'notes');
     });
 
     test('should handle invalid memo type objects', async () => {
       const configPath = '.vsmemo/types.json';
       mockFileService.setFileContent(configPath, JSON.stringify({
         memoTypes: [
-          { id: 'valid', name: 'Valid', template: 'template' },
-          { name: 'Missing ID', template: 'template' },
-          { id: 'missing-name', template: 'template' },
-          { id: 'missing-template', name: 'Missing Template' },
+          { id: 'valid', name: 'Valid', templatePathPath: 'templatePath.md' },
+          { name: 'Missing ID', templatePath: 'template.md' },
+          { id: 'missing-name', templatePath: 'template.md' },
+          { id: 'missing-templatePath', name: 'Missing Template' },
           null,
           'string'
         ],
@@ -116,17 +128,17 @@ suite('VsCodeConfigService', () => {
 
       const config = await configService.loadConfig();
 
-      // When any memo type is invalid, returns default config
-      assert.strictEqual(config.memoTypes.length, 2);
-      assert.strictEqual(config.memoTypes[0].id, 'daily');
-      assert.strictEqual(config.baseDir, '.');
+      // When some memo types are invalid, only valid ones are kept
+      assert.strictEqual(config.memoTypes.length, 1);
+      assert.strictEqual(config.memoTypes[0].id, 'valid');
+      assert.strictEqual(config.baseDir, 'memos');
     });
 
     test.skip('should use valid config when properly formatted', async () => {
       const configPath = '.vsmemo/types.json';
       const validConfig: MemoConfig = {
         memoTypes: [
-          { id: 'custom', name: 'Custom Note', template: 'Custom template' }
+          { id: 'custom', name: 'Custom Note', templatePath: 'custom.md' }
         ],
         baseDir: 'my-notes',
         fileExtensions: ['.md', '.markdown'],
@@ -151,7 +163,7 @@ suite('VsCodeConfigService', () => {
       const configPath = '.vsmemo/types.json';
       mockFileService.setFileContent(configPath, JSON.stringify({
         memoTypes: [
-          { id: 'test', name: 'Test', template: 'template' }
+          { id: 'test', name: 'Test', templatePath: 'template.md' }
         ]
       }));
 
@@ -164,7 +176,7 @@ suite('VsCodeConfigService', () => {
       const configPath = '.vsmemo/types.json';
       mockFileService.setFileContent(configPath, JSON.stringify({
         memoTypes: [
-          { id: 'test', name: 'Test', template: 'template' }
+          { id: 'test', name: 'Test', templatePath: 'template.md' }
         ],
         baseDir: '.'
       }));
@@ -179,7 +191,7 @@ suite('VsCodeConfigService', () => {
       const configPath = '.vsmemo/types.json';
       mockFileService.setFileContent(configPath, JSON.stringify({
         memoTypes: [
-          { id: 'test', name: 'Test', template: 'template' }
+          { id: 'test', name: 'Test', templatePath: 'template.md' }
         ],
         baseDir: '.',
         fileExtensions: ['md', 'invalid'],

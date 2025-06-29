@@ -36,8 +36,24 @@ class MockFileService implements IFileService {
     this.files.set(path, content);
   }
 
+  async deleteFile(path: string): Promise<void> {
+    this.files.delete(path);
+  }
+
   async createDirectory(path: string): Promise<void> {
     this.directories.add(path);
+  }
+
+  async openTextDocument(path: string): Promise<void> {
+    this.openedFiles.push(path);
+  }
+
+  async showTextDocument(path: string): Promise<void> {
+    this.openedFiles.push(path);
+  }
+
+  async listFiles(dirPath: string, extensions: string[]): Promise<string[]> {
+    return [];
   }
 
   async openFile(path: string): Promise<void> {
@@ -125,12 +141,12 @@ suite('CreateMemoUseCase', () => {
       {
         id: 'daily',
         name: 'Daily Note',
-        template: 'Daily template: {TITLE}'
+        templatePath: 'Daily templatePath: {TITLE}'
       },
       {
         id: 'meeting',
         name: 'Meeting Note',
-        template: 'Meeting template: {TITLE}'
+        templatePath: 'Meeting templatePath: {TITLE}'
       }
     ],
     baseDir: 'memos',
@@ -156,7 +172,7 @@ suite('CreateMemoUseCase', () => {
     assert.ok(writtenContent.includes('---'));
     assert.ok(writtenContent.includes('title: Test Title'));
     assert.ok(writtenContent.includes('type: daily'));
-    assert.ok(writtenContent.includes('Processed: Daily template: {TITLE}'));
+    assert.ok(writtenContent.includes('Processed: Daily templatePath: {TITLE}'));
     assert.ok(mockFileService.openedFiles.includes(expectedPath));
   });
 
@@ -213,7 +229,7 @@ suite('CreateMemoUseCase', () => {
         {
           id: 'daily',
           name: 'Daily Note',
-          template: 'Daily template: {TITLE}'
+          templatePath: 'Daily templatePath: {TITLE}'
         }
       ],
       baseDir: 'notes',
