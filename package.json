@@ -34,7 +34,9 @@
   "categories": [
     "Notebooks"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
   "main": "./out/extension.js",
   "extensionDependencies": [
     "vscode.git"

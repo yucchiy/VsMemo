@@ -16,7 +16,6 @@ export interface OutboundLink {
   context: string;
 }
 
-
 export interface IBacklinkService {
   /**
    * Build or rebuild the backlink index for all memo files

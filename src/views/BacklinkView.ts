@@ -108,7 +108,7 @@ export class MemoInsightsView implements vscode.TreeDataProvider<MemoInsightsTre
 
   async updateForFile(filePath: string): Promise<void> {
     this.currentFile = filePath;
-    
+
     // Load backlinks
     const backlinks = await this.backlinkService.getBacklinks(filePath);
     console.log(`[MemoInsights] Loaded ${backlinks.length} backlinks for ${filePath}`);
@@ -134,7 +134,7 @@ export class MemoInsightsView implements vscode.TreeDataProvider<MemoInsightsTre
 
   async getChildren(element?: MemoInsightsTreeItem): Promise<MemoInsightsTreeItem[]> {
     console.log(`[MemoInsights] getChildren called with element:`, element?.label || 'root');
-    
+
     if (this.isLoading) {
       return [new MemoInsightsTreeItem('Loading...', vscode.TreeItemCollapsibleState.None)];
     }
@@ -196,7 +196,7 @@ export class MemoInsightsView implements vscode.TreeDataProvider<MemoInsightsTre
         const relativePath = workspaceFolders && workspaceFolders.length > 0
           ? path.relative(workspaceFolders[0].uri.fsPath, this.currentFile)
           : fileName;
-        
+
         items.push(new MemoInsightsTreeItem(`File: ${fileName}`, vscode.TreeItemCollapsibleState.None));
         items.push(new MemoInsightsTreeItem(`Path: ${relativePath}`, vscode.TreeItemCollapsibleState.None));
         items.push(new MemoInsightsTreeItem(`Backlinks: ${Array.from(this.backlinks.values()).reduce((sum, links) => sum + links.length, 0)}`, vscode.TreeItemCollapsibleState.None));

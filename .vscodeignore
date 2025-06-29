@@ -16,7 +16,17 @@ vsc-extension-quickstart.md
 .git/**
 
 # Dependencies and build
-node_modules/**
+node_modules/**/test/**
+node_modules/**/tests/**
+node_modules/**/*.d.ts
+node_modules/**/*.md
+node_modules/**/LICENSE*
+node_modules/**/CHANGELOG*
+node_modules/**/README*
+node_modules/**/.github/**
+node_modules/**/docs/**
+node_modules/**/examples/**
+node_modules/**/coverage/**
 **/.vscode-test.*
 
 # Development documentation

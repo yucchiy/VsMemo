@@ -290,7 +290,7 @@ export class GraphView {
         node.color = '#4A90E2'; // Blue for normal nodes
       }
     });
-    
+
     console.log('Active node found:', activeNodeFound, 'Current active file:', this.currentActiveFile);
 
     return { nodes, edges };
