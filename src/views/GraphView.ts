@@ -11,6 +11,7 @@ interface GraphNode {
   size: number;
   color: string;
   title: string;
+  isActive?: boolean;
 }
 
 interface GraphEdge {
@@ -266,6 +267,7 @@ export class GraphView {
     }
 
     // Update node sizes based on connections and identify special nodes
+    let activeNodeFound = false;
     nodes.forEach(node => {
       const connections = nodeMap.get(node.id) || 0;
       node.size = Math.max(20, 20 + connections * 5); // Base size + connection bonus
@@ -275,8 +277,11 @@ export class GraphView {
       const isActiveFile = this.currentActiveFile && fullPath === this.currentActiveFile;
 
       if (isActiveFile) {
+        console.log('Active node found:', node.id, 'Full path:', fullPath);
         node.color = '#FF9500'; // Orange for active file
         node.size = Math.max(30, node.size + 10); // Make active file larger
+        node.isActive = true;
+        activeNodeFound = true;
       } else if (connections === 0) {
         node.color = '#FF6B6B'; // Red for isolated nodes
       } else if (connections >= 5) {
@@ -285,6 +290,8 @@ export class GraphView {
         node.color = '#4A90E2'; // Blue for normal nodes
       }
     });
+    
+    console.log('Active node found:', activeNodeFound, 'Current active file:', this.currentActiveFile);
 
     return { nodes, edges };
   }
@@ -501,10 +508,7 @@ export class GraphView {
       <body>
         <div class="container">
           <div class="toolbar">
-            <button onclick="refreshGraph()">Refresh</button>
-            <button onclick="resetView()">Reset View</button>
-            <button onclick="fitToContent()">Fit to Content</button>
-            <span style="margin-left: 20px; margin-right: 8px; font-size: 12px;">View Mode:</span>
+            <span style="font-size: 12px;">View Mode:</span>
             <button id="focusBtn" onclick="changeDisplayMode('focus')" class="mode-btn">Focus</button>
             <button id="contextBtn" onclick="changeDisplayMode('context')" class="mode-btn">Context</button>
             <button id="fullBtn" onclick="changeDisplayMode('full')" class="mode-btn">Full</button>
@@ -541,19 +545,29 @@ export class GraphView {
               cy = cytoscape({
               container: document.getElementById('graph'),
               
+              // Animation settings
+              animate: true,
+              animationDuration: 200,
+              animationEasing: 'ease-out-cubic',
+              
               elements: [
-                ...graphData.nodes.map(node => ({
-                  data: { 
-                    id: node.id, 
-                    label: node.label,
-                    title: node.title
-                  },
-                  style: {
-                    'background-color': node.color,
-                    'width': node.size,
-                    'height': node.size
-                  }
-                })),
+                ...graphData.nodes.map(node => {
+                  const element = {
+                    data: { 
+                      id: node.id, 
+                      label: node.label,
+                      title: node.title,
+                      isActive: node.isActive || false
+                    },
+                    style: {
+                      'background-color': node.color,
+                      'width': node.size,
+                      'height': node.size
+                    }
+                  };
+                  
+                  return element;
+                }),
                 ...graphData.edges.map(edge => ({
                   data: { 
                     id: edge.id, 
@@ -622,17 +636,62 @@ export class GraphView {
                 nodeDimensionsIncludeLabels: true,
                 randomize: false,
                 animate: 'during',
-                animationDuration: 1000
+                animationDuration: 200,
+                animationEasing: 'ease-out-cubic',
+                // Force-directed layout parameters
+                nodeRepulsion: 4500,
+                idealEdgeLength: 100,
+                edgeElasticity: 0.45,
+                nestingFactor: 0.1,
+                gravity: 0.25,
+                numIter: 2500,
+                tile: false,
+                // Important: Don't reposition locked nodes
+                randomizationSeed: 42
               } : {
-                name: 'grid',
-                padding: 10,
-                avoidOverlap: true,
+                name: 'cose',
                 animate: 'during',
-                animationDuration: 1000
+                animationDuration: 200,
+                animationEasing: 'ease-out-cubic',
+                nodeRepulsion: 4500,
+                idealEdgeLength: 100
               }
             });
             
             console.log('Graph initialized successfully');
+            
+            // Center the active node after layout is complete
+            cy.on('layoutstop', function() {
+              const activeNode = cy.nodes().filter(function(node) {
+                return node.data('isActive');
+              });
+              
+              if (activeNode.length > 0) {
+                console.log('Centering active node:', activeNode.id());
+                // Get viewport center
+                const extent = cy.extent();
+                const centerX = (extent.x1 + extent.x2) / 2;
+                const centerY = (extent.y1 + extent.y2) / 2;
+                
+                // Move active node to center
+                const activePos = activeNode.position();
+                const deltaX = centerX - activePos.x;
+                const deltaY = centerY - activePos.y;
+                
+                // Move all nodes by the same delta to keep relative positions
+                cy.nodes().animate({
+                  position: function(node) {
+                    const pos = node.position();
+                    return {
+                      x: pos.x + deltaX,
+                      y: pos.y + deltaY
+                    };
+                  },
+                  duration: 200,
+                  easing: 'ease-out-cubic'
+                });
+              }
+            });
             
             // Add event listeners
             cy.on('tap', 'node', function(evt) {
@@ -671,19 +730,6 @@ export class GraphView {
           function hideTooltip() {
             const tooltips = document.querySelectorAll('.node-tooltip');
             tooltips.forEach(tooltip => tooltip.remove());
-          }
-          
-          function refreshGraph() {
-            vscode.postMessage({ command: 'refresh' });
-          }
-          
-          function resetView() {
-            cy.fit();
-            cy.center();
-          }
-          
-          function fitToContent() {
-            cy.fit();
           }
           
           function changeDisplayMode(mode) {
@@ -732,8 +778,15 @@ export class GraphView {
               case 'focusNode':
                 const node = cy.getElementById(message.nodeId);
                 if (node.length > 0) {
-                  cy.center(node);
-                  node.select();
+                  cy.animate({
+                    center: { eles: node },
+                    zoom: 1.5,
+                    duration: 200,
+                    easing: 'ease-out-cubic',
+                    complete: function() {
+                      node.select();
+                    }
+                  });
                 }
                 break;
               case 'highlightActiveFile':
