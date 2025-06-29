@@ -348,10 +348,9 @@ Current dependencies (3 runtime + dev dependencies):
 
 Development dependencies include TypeScript, ESLint, Mocha, and VS Code testing tools.
 
-- Dependencies are managed via npm and excluded from version control
+- Dependencies are managed via npm with lock file for reproducible builds
 - Run `npm install` after cloning to install dependencies
-- `package-lock.json` is excluded to avoid unnecessary version conflicts
-- Only commit `package.json` for dependency management
+- `package-lock.json` is committed to ensure consistent dependency versions
 - Local copies of graph libraries stored in `media/` for offline use
 
 ## Development Patterns and Conventions

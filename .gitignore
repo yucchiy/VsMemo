@@ -7,9 +7,6 @@ out/
 # Node modules
 node_modules/
 
-# Package lock files
-package-lock.json
-
 # Logs
 *.log
 
