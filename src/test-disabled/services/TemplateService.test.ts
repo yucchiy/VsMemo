@@ -24,8 +24,24 @@ class MockFileService implements IFileService {
     return this.files.has(path);
   }
 
+  async deleteFile(path: string): Promise<void> {
+    this.files.delete(path);
+  }
+
   async createDirectory(path: string): Promise<void> {
     // Mock implementation
+  }
+
+  async openTextDocument(path: string): Promise<void> {
+    this.openedFiles.push(path);
+  }
+
+  async showTextDocument(path: string): Promise<void> {
+    this.openedFiles.push(path);
+  }
+
+  async listFiles(dirPath: string, extensions: string[]): Promise<string[]> {
+    return [];
   }
 
   async openFile(path: string): Promise<void> {

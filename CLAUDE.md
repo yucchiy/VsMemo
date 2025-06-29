@@ -107,6 +107,21 @@ The extension follows a **layered architecture** with **dependency injection** f
 - Avoid heavy DI containers - simple manual injection is preferred
 - All services implement interfaces for easy testing
 - Mock implementations for unit tests
+- Optional logger service injection for better debugging and monitoring
+
+### Service Layer Improvements (2025-06-29)
+
+#### Logging Service
+- **ILoggerService**: Centralized logging interface with configurable log levels
+- **LoggerService**: Production implementation with structured log formatting
+- **Log Levels**: ERROR, WARN, INFO, DEBUG with filtering capabilities
+- **Integration**: Optional injection into services for better debugging
+
+#### Graph Data Service
+- **GraphDataService**: Extracted graph data generation logic from GraphView
+- **Separation of Concerns**: Pure data logic separated from UI rendering
+- **Display Modes**: FOCUS (direct connections), CONTEXT (2 degrees), FULL (all files)
+- **Testable Design**: Business logic extracted for comprehensive testing
 
 ### Core Features
 
@@ -251,14 +266,20 @@ test('should create memo with specified type and title', async () => {
 ### Test Coverage
 
 Current test suite covers:
-- **12 test files** across utilities, services, use cases, commands, and variables
+- **14 test files** across utilities, services, use cases, commands, and variables
 - **Utilities**: dateUtils, pathUtils, fileUtils, variableUtils
-- **Services**: TemplateService, VsCodeConfigService  
+- **Services**: TemplateService, VsCodeConfigService, BacklinkService, GraphDataService
 - **Use Cases**: CreateMemoUseCase, ListMemosUseCase
 - **Variables**: SystemVariable, UserDefinedVariable, VariableRegistry
 - **Integration**: extension.test.ts
 
-Note: Advanced features like BacklinkService, GraphView, and providers would benefit from additional test coverage as the project scales.
+#### Recent Test Additions (2025-06-29)
+- **BacklinkService.test.ts**: Comprehensive testing of backlink indexing, retrieval, and statistics
+- **GraphDataService.test.ts**: Testing of graph data generation, display modes, and node styling
+- **Mock Services**: Enhanced mock implementations for better test isolation
+- **Edge Cases**: Error handling, empty workspaces, invalid links
+
+Note: MemoTreeDataProvider and language providers would benefit from additional test coverage as the project scales.
 
 ### Running Tests
 

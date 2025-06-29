@@ -2,6 +2,7 @@ import * as path from 'path';
 import { IBacklinkService, Backlink, BacklinkIndex, OutboundLink } from '../interfaces/IBacklinkService';
 import { IFileService } from '../interfaces/IFileService';
 import { IConfigService } from '../interfaces/IConfigService';
+import { ILoggerService } from '../interfaces/ILoggerService';
 import { isValidMemoFile } from '../../utils/fileUtils';
 
 export class BacklinkService implements IBacklinkService {
@@ -13,7 +14,8 @@ export class BacklinkService implements IBacklinkService {
   constructor(
     private fileService: IFileService,
     private configService: IConfigService,
-    workspaceRoot: string
+    workspaceRoot: string,
+    private logger?: ILoggerService
   ) {
     this.workspaceRoot = workspaceRoot;
   }
@@ -22,14 +24,18 @@ export class BacklinkService implements IBacklinkService {
     this.backlinkIndex = {};
 
     try {
+      this.logger?.info('Building backlink index...');
       const config = await this.configService.loadConfig();
       this.baseDir = config.baseDir;
       this.fileExtensions = config.fileExtensions;
 
       const searchPath = path.join(this.workspaceRoot, this.baseDir);
       await this.scanDirectory(searchPath);
+      this.logger?.info(`Backlink index built successfully. Total entries: ${Object.keys(this.backlinkIndex).length}`);
     } catch (error) {
-      console.error('Error building backlink index:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      this.logger?.error('Error building backlink index', error instanceof Error ? error : new Error(errorMessage));
+      throw new Error(`Failed to build backlink index: ${errorMessage}`);
     }
   }
 

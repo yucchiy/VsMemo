@@ -21,8 +21,49 @@ export class VsCodeFileService implements IFileService {
     await fs.writeFile(filePath, content, 'utf-8');
   }
 
+  async deleteFile(filePath: string): Promise<void> {
+    await fs.unlink(filePath);
+  }
+
   async createDirectory(dirPath: string): Promise<void> {
     await fs.mkdir(dirPath, { recursive: true });
+  }
+
+  async openTextDocument(filePath: string): Promise<void> {
+    await vscode.workspace.openTextDocument(filePath);
+  }
+
+  async showTextDocument(filePath: string): Promise<void> {
+    const document = await vscode.workspace.openTextDocument(filePath);
+    await vscode.window.showTextDocument(document);
+  }
+
+  async listFiles(dirPath: string, extensions: string[]): Promise<string[]> {
+    try {
+      const files: string[] = [];
+      
+      const scanDirectory = async (currentPath: string): Promise<void> => {
+        const entries = await fs.readdir(currentPath, { withFileTypes: true });
+        
+        for (const entry of entries) {
+          const fullPath = path.join(currentPath, entry.name);
+          
+          if (entry.isDirectory()) {
+            await scanDirectory(fullPath);
+          } else if (entry.isFile()) {
+            const ext = path.extname(entry.name);
+            if (extensions.includes(ext)) {
+              files.push(fullPath);
+            }
+          }
+        }
+      };
+      
+      await scanDirectory(dirPath);
+      return files;
+    } catch (error) {
+      return [];
+    }
   }
 
   async openFile(filePath: string): Promise<void> {

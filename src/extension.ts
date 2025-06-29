@@ -23,9 +23,13 @@ import { MemoMarkdownPreviewProvider } from './providers/MemoMarkdownItPlugin';
 import { VsCodeConfigService } from './services/implementations/VsCodeConfigService';
 import { VsCodeFileService } from './services/implementations/VsCodeFileService';
 import { BacklinkService } from './services/implementations/BacklinkService';
+import { LoggerService } from './services/implementations/LoggerService';
+import { LogLevel } from './services/interfaces/ILoggerService';
 
 export function activate(context: vscode.ExtensionContext) {
-  console.log('VsMemo extension is now active!');
+  // Initialize logging service
+  const logger = new LoggerService(LogLevel.INFO);
+  logger.info('VsMemo extension is now active!');
 
   // Initialize services
   const fileService = new VsCodeFileService();
@@ -38,7 +42,7 @@ export function activate(context: vscode.ExtensionContext) {
     : '';
 
   // Create backlink service
-  const backlinkService = new BacklinkService(fileService, configService, workspaceRoot);
+  const backlinkService = new BacklinkService(fileService, configService, workspaceRoot, logger);
 
   // Create memo tree data provider
   const memoTreeProvider = new MemoTreeDataProvider(configService, fileService);
