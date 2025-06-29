@@ -162,6 +162,16 @@ VsMemo currently uses file-based configuration (`.vsmemo/types.json`). No VS Cod
 
 This extension is open source. Feel free to contribute improvements, report issues, or suggest features on [GitHub](https://github.com/yucchiy/VsMemo).
 
+### Development
+
+1. Clone the repository
+2. Run `npm install` to install dependencies
+3. Use `F5` in VS Code to launch Extension Development Host
+4. Make changes and test functionality
+5. Run `npm test` to ensure tests pass
+
+See [CONTRIBUTING.md](.github/CONTRIBUTING.md) for detailed development guidelines.
+
 ## License
 
 MIT License - see [LICENSE](LICENSE) file for details.

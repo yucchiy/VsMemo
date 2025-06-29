@@ -21,6 +21,7 @@ node_modules/**
 
 # Development documentation
 CLAUDE.md
+.github/**
 
 # Test files
 **/test/**

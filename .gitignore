@@ -31,6 +31,9 @@ coverage/
 # Output of 'npm pack'
 *.tgz
 
+# VSCE package output
+*.vsix
+
 # Yarn Integrity file
 .yarn-integrity
 

@@ -1,0 +1,79 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Install Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Run tests
+      uses: coactions/setup-xvfb@v1
+      with:
+        run: npm test
+
+    - name: Install vsce
+      run: npm install -g @vscode/vsce
+
+    - name: Package extension
+      run: vsce package
+
+    - name: Get package info
+      id: package
+      run: |
+        echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+        echo "name=$(node -p "require('./package.json').name")" >> $GITHUB_OUTPUT
+
+    - name: Create GitHub Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: v${{ steps.package.outputs.version }}
+        body: |
+          ## Changes
+          
+          See [CHANGELOG.md](https://github.com/yucchiy/VsMemo/blob/main/CHANGELOG.md) for details.
+          
+          ## Installation
+          
+          Download the `.vsix` file and install via:
+          ```
+          code --install-extension vsmemo-${{ steps.package.outputs.version }}.vsix
+          ```
+          
+          Or install from the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=yucchiy.vsmemo).
+        draft: false
+        prerelease: false
+
+    - name: Upload Release Asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./${{ steps.package.outputs.name }}-${{ steps.package.outputs.version }}.vsix
+        asset_name: ${{ steps.package.outputs.name }}-${{ steps.package.outputs.version }}.vsix
+        asset_content_type: application/zip
+
+    - name: Publish to VS Code Marketplace
+      run: vsce publish --pat ${{ secrets.VSCE_PAT }}
+      env:
+        VSCE_PAT: ${{ secrets.VSCE_PAT }}
