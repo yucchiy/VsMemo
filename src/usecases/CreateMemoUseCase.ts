@@ -76,7 +76,7 @@ export class CreateMemoUseCase {
       presetInputs['TITLE'] = title;
     }
 
-    const processedTemplate = await this.templateService.processTemplateFromFile(memoType.template, configBasePath, registry, presetInputs);
+    const processedTemplate = await this.templateService.processTemplateFromFile(memoType.templatePath, configBasePath, registry, presetInputs);
 
     let fullPath: string;
     if (processedTemplate.path) {

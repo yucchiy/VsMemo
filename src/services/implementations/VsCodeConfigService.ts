@@ -88,7 +88,7 @@ export class VsCodeConfigService implements IConfigService {
     return value !== null && typeof value === 'object';
   }
 
-  private isValidMemoType(memoType: unknown): memoType is { id: string; name: string; template: string } {
+  private isValidMemoType(memoType: unknown): memoType is { id: string; name: string; templatePath: string } {
     if (!this.isObject(memoType)) {
       return false;
     }
@@ -101,7 +101,7 @@ export class VsCodeConfigService implements IConfigService {
       return false;
     }
 
-    if (!('template' in memoType) || typeof memoType.template !== 'string') {
+    if (!('templatePath' in memoType) || typeof memoType.templatePath !== 'string') {
       return false;
     }
 
@@ -114,43 +114,12 @@ export class VsCodeConfigService implements IConfigService {
         {
           id: 'daily',
           name: 'Daily Note',
-          template: `---
-title: {TITLE}
-date: {DATE}
-filePath: daily/{YEAR}/{MONTH}/{DAY}.md
----
-
-# {TITLE}
-
-## Tasks
-- [ ] 
-
-## Notes
-
-`
+          templatePath: 'templates/daily.md'
         },
         {
           id: 'meeting',
           name: 'Meeting Note',
-          template: `---
-title: {TITLE}
-date: {DATE}
-type: meeting
-filePath: meetings/{YEAR}/{MONTH}/{TITLE}.md
----
-
-# {TITLE}
-
-## Attendees
-- 
-
-## Agenda
-- 
-
-## Action Items
-- [ ] 
-
-`
+          templatePath: 'templates/meeting.md'
         }
       ],
       baseDir: '.',

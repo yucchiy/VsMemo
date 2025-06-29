@@ -59,19 +59,19 @@ Create a `.vsmemo/types.json` file in your workspace root:
   "fileExtensions": [".md", ".markdown"],
   "memoTypes": [
     {
+      "id": "daily",
       "name": "Daily Note",
-      "directory": "daily",
-      "template": "---\ntitle: {TITLE}\ndate: {DATE}\ntags: [daily]\n---\n\n# {TITLE}\n\n## Notes\n\n## Tasks\n\n## Reflections\n"
+      "templatePath": "templates/daily.md"
     },
     {
+      "id": "project",
       "name": "Project Note",
-      "directory": "projects", 
-      "template": "---\ntitle: {TITLE}\ntype: project\ncreated: {DATE}\n---\n\n# {TITLE}\n\n## Overview\n\n## Goals\n\n## Resources\n\n## Progress\n"
+      "templatePath": "templates/project.md"
     },
     {
+      "id": "meeting",
       "name": "Meeting Note",
-      "directory": "meetings",
-      "template": "---\ntitle: {TITLE}\ndate: {DATE}\nattendees: []\n---\n\n# {TITLE}\n\n## Agenda\n\n## Discussion\n\n## Action Items\n\n## Next Steps\n"
+      "templatePath": "templates/meeting.md"
     }
   ],
   "variables": {
@@ -79,6 +79,51 @@ Create a `.vsmemo/types.json` file in your workspace root:
     "COMPANY": "Your Company"
   }
 }
+```
+
+### Template Files
+
+Create template files in your `.vsmemo/templates/` directory. For example:
+
+**`.vsmemo/templates/daily.md`**:
+```markdown
+---
+title: {TITLE}
+date: {DATE}
+path: daily/{YEAR}/{MONTH}/{DAY}.md
+tags: [daily]
+---
+
+# {TITLE}
+
+## Tasks
+- [ ] 
+
+## Notes
+
+## Reflections
+
+```
+
+**`.vsmemo/templates/project.md`**:
+```markdown
+---
+title: {TITLE}
+type: project
+created: {DATE}
+path: projects/{TITLE}.md
+---
+
+# {TITLE}
+
+## Overview
+
+## Goals
+
+## Resources
+
+## Progress
+
 ```
 
 ## Usage

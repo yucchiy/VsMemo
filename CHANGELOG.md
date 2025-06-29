@@ -129,6 +129,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improved code organization and maintainability
 - Enhanced TypeScript strict mode compliance
 
+## [0.3.0] - 2025-06-30
+
+### Changed (Breaking Changes)
+- **BREAKING**: `template` property in `memoTypes` renamed to `templatePath`
+  - This property now correctly represents the file path to a template file
+  - Previous usage was inconsistent (implementation expected file path, documentation showed content)
+  - **Migration**: Update your `.vsmemo/types.json` to use `templatePath` instead of `template`
+
+### Added
+- Template file system with proper file path references
+- Documentation for creating template files in `.vsmemo/templates/` directory
+- Example template files for daily notes and project notes
+
+### Fixed
+- Corrected confusing property naming that caused implementation/documentation mismatch
+- Default configuration now uses proper template file paths
+
+### Migration Guide
+If you have existing `.vsmemo/types.json` configuration:
+
+**Before (v0.2.0)**:
+```json
+{
+  "memoTypes": [
+    {
+      "name": "Daily Note",
+      "template": "---\ntitle: {TITLE}\n---\n# {TITLE}"
+    }
+  ]
+}
+```
+
+**After (v0.3.0)**:
+```json
+{
+  "memoTypes": [
+    {
+      "id": "daily",
+      "name": "Daily Note", 
+      "templatePath": "templates/daily.md"
+    }
+  ]
+}
+```
+
+And create the template file at `.vsmemo/templates/daily.md`.
+
 ## [Unreleased]
 
 ### Planned
