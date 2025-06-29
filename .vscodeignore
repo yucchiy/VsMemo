@@ -1,11 +1,36 @@
+# Source files and development
+src/**
+**/*.ts
+**/*.map
+**/tsconfig.json
+
+# Development configuration
 .vscode/**
 .vscode-test/**
-src/**
-.gitignore
-.yarnrc
+eslint.config.mjs
 vsc-extension-quickstart.md
-**/tsconfig.json
-**/eslint.config.mjs
-**/*.map
-**/*.ts
+.yarnrc
+
+# Git and version control
+.gitignore
+.git/**
+
+# Dependencies and build
+node_modules/**
 **/.vscode-test.*
+
+# Development documentation
+CLAUDE.md
+
+# Test files
+**/test/**
+**/*.test.js
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+*.swp
+*.swo
+*~

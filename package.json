@@ -1,13 +1,38 @@
 {
   "name": "vsmemo",
   "displayName": "VsMemo",
-  "description": "VS Code extension for memo management with template system",
-  "version": "0.0.1",
+  "description": "Comprehensive memo management system with cross-linking, backlink analysis, and interactive graph visualization for VS Code",
+  "version": "0.1.0",
+  "publisher": "yucchiy",
+  "author": {
+    "name": "yucchiy"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/yucchiy/VsMemo",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yucchiy/VsMemo.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yucchiy/VsMemo/issues"
+  },
+  "keywords": [
+    "memo",
+    "notes",
+    "markdown",
+    "template",
+    "backlinks",
+    "graph",
+    "visualization",
+    "cross-reference",
+    "knowledge management",
+    "note-taking"
+  ],
   "engines": {
     "vscode": "^1.101.0"
   },
   "categories": [
-    "Other"
+    "Notebooks"
   ],
   "activationEvents": [],
   "main": "./out/extension.js",

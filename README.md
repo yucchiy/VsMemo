@@ -1,71 +1,171 @@
-# vsmemo README
+# VsMemo
 
-This is the README for your extension "vsmemo". After writing up a brief description, we recommend including the following sections.
+A comprehensive memo management system for VS Code that transforms how you create, link, and explore your notes. VsMemo combines template-based creation, intelligent cross-linking, backlink analysis, and interactive graph visualization to create a powerful knowledge management experience.
 
 ## Features
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
+### 📝 Template-Based Memo Creation
+- Create memos using configurable types and templates
+- Variable substitution with system variables (`{YEAR}`, `{MONTH}`, `{DAY}`, `{DATE}`, `{TITLE}`) and custom user-defined variables
+- Organized memo types with dedicated directories
+- Automatic file naming and directory creation
 
-For example if there is an image subfolder under your extension project workspace:
+### 🔗 Cross-Memo Linking System
+- **Custom URI Scheme**: Use `vsmemo://path/to/memo.md` syntax for cross-references
+- **Go-to-Definition**: Navigate to linked memos using VS Code's standard F12 functionality
+- **Hover Information**: Preview memo content by hovering over links
+- **IntelliSense Completion**: Auto-complete memo paths while typing
+- **Markdown Preview Support**: Clickable links in preview mode
+- **Link Insertion**: Interactive command to insert links with file selection
 
-\!\[feature X\]\(images/feature-x.png\)
+### 🔍 Backlink Analysis
+- **Automatic Indexing**: Real-time tracking of all memo cross-references
+- **Backlink View**: Tree view showing which files reference the current memo
+- **Orphaned File Detection**: Find memos with no incoming links
+- **Link Statistics**: Analytics on memo connectivity and relationships
+- **Dynamic Updates**: Automatic refresh on file save and edit
 
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+### 📊 Interactive Graph Visualization
+- **Relationship Graph**: Cytoscape.js-powered visualization of memo connections
+- **Multiple Display Modes**:
+  - **Focus Mode**: Active file + directly connected memos
+  - **Context Mode**: Active file + 2 degrees of separation
+  - **Full Mode**: Complete memo network
+- **Active File Tracking**: Graph automatically updates when switching files
+- **Visual Highlighting**: Active file emphasized with distinctive styling
+- **Toolbar Controls**: Easy switching between display modes
+
+### 🎯 VS Code Integration
+- **Explorer Views**: Two custom tree views (VsMemo Explorer, Backlinks)
+- **13 Commands**: Comprehensive set of memo operations accessible via Command Palette
+- **Context Menus**: Right-click operations for rename/delete in Explorer
+- **Language Providers**: Enhanced Markdown editing with definition, hover, and completion
+- **Event-Driven Updates**: Responsive UI that reacts to file changes
+
+## Installation
+
+1. Install the extension from the VS Code Marketplace
+2. Open a workspace folder
+3. Create a `.vsmemo` directory in your workspace root
+4. Create a `types.json` configuration file (see Configuration section)
+
+## Configuration
+
+Create a `.vsmemo/types.json` file in your workspace root:
+
+```json
+{
+  "baseDir": "memos",
+  "fileExtensions": [".md", ".markdown"],
+  "memoTypes": [
+    {
+      "name": "Daily Note",
+      "directory": "daily",
+      "template": "---\ntitle: {TITLE}\ndate: {DATE}\ntags: [daily]\n---\n\n# {TITLE}\n\n## Notes\n\n## Tasks\n\n## Reflections\n"
+    },
+    {
+      "name": "Project Note",
+      "directory": "projects", 
+      "template": "---\ntitle: {TITLE}\ntype: project\ncreated: {DATE}\n---\n\n# {TITLE}\n\n## Overview\n\n## Goals\n\n## Resources\n\n## Progress\n"
+    },
+    {
+      "name": "Meeting Note",
+      "directory": "meetings",
+      "template": "---\ntitle: {TITLE}\ndate: {DATE}\nattendees: []\n---\n\n# {TITLE}\n\n## Agenda\n\n## Discussion\n\n## Action Items\n\n## Next Steps\n"
+    }
+  ],
+  "variables": {
+    "AUTHOR": "Your Name",
+    "COMPANY": "Your Company"
+  }
+}
+```
+
+## Usage
+
+### Creating Memos
+1. Use **Command Palette** → `VsMemo: Create New Memo`
+2. Select a memo type from the dropdown
+3. Enter a title when prompted
+4. The memo will be created with the template and opened
+
+### Linking Memos
+1. **Insert Link**: Use `VsMemo: Insert Memo Link` command to browse and select files
+2. **Manual Linking**: Type `[Link Text](vsmemo://path/to/memo.md)`
+3. **Navigation**: Use F12 (Go to Definition) on any vsmemo:// link
+4. **Preview**: Hover over links to see content preview
+
+### Exploring Relationships
+1. **Backlink View**: Open the Backlinks panel in Explorer to see incoming references
+2. **Graph View**: Use `VsMemo: Show Memo Graph` command for visual exploration
+3. **Orphaned Files**: Use `VsMemo: Show Orphaned Memos` to find isolated notes
+4. **Statistics**: Use `VsMemo: Show Link Statistics` for connectivity analytics
+
+### File Management
+- **Rename**: Right-click memo files in Explorer → Rename Memo
+- **Delete**: Right-click memo files in Explorer → Delete Memo
+- **Refresh**: Use refresh buttons in tree views to update indexes
+
+## Commands
+
+| Command | Description |
+|---------|-------------|
+| `VsMemo: Create New Memo` | Create a new memo using templates |
+| `VsMemo: Insert Memo Link` | Insert a link to another memo |
+| `VsMemo: Show Backlinks` | Display backlinks for current file |
+| `VsMemo: Show Memo Graph` | Open interactive graph visualization |
+| `VsMemo: Show Orphaned Memos` | Find memos with no incoming links |
+| `VsMemo: Show Link Statistics` | Display connectivity analytics |
+| `VsMemo: Refresh Backlink Index` | Rebuild backlink database |
+| `VsMemo: Rename Memo` | Rename memo file |
+| `VsMemo: Delete Memo` | Delete memo file |
+| `VsMemo: List Memos` | Browse all memos |
+| `VsMemo: Commit Memo Changes` | Commit changes via Git |
 
 ## Requirements
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+- VS Code 1.101.0 or higher
+- Git (for commit functionality)
+- Workspace folder (memos are workspace-specific)
+
+## File Structure
+
+VsMemo organizes your memos in a structured way:
+
+```
+your-workspace/
+├── .vsmemo/
+│   └── types.json          # Configuration file
+└── memos/                  # Base directory (configurable)
+    ├── daily/              # Memo type directories
+    │   ├── 2025-01-15.md
+    │   └── 2025-01-16.md
+    ├── projects/
+    │   ├── project-alpha.md
+    │   └── project-beta.md
+    └── meetings/
+        ├── team-standup-jan.md
+        └── client-review.md
+```
 
 ## Extension Settings
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
-
-For example:
-
-This extension contributes the following settings:
-
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
+VsMemo currently uses file-based configuration (`.vsmemo/types.json`). No VS Code settings are required.
 
 ## Known Issues
 
-Calling out known issues can help limit users opening duplicate issues against your extension.
+- Graph visualization requires modern browsers (uses Cytoscape.js)
+- Large memo collections (1000+ files) may experience slower indexing
+- Git functionality requires a Git repository in the workspace
 
-## Release Notes
+## Contributing
 
-Users appreciate release notes as you update your extension.
+This extension is open source. Feel free to contribute improvements, report issues, or suggest features on [GitHub](https://github.com/yucchiy/VsMemo).
 
-### 1.0.0
+## License
 
-Initial release of ...
-
-### 1.0.1
-
-Fixed issue #.
-
-### 1.1.0
-
-Added features X, Y, and Z.
+MIT License - see [LICENSE](LICENSE) file for details.
 
 ---
 
-## Following extension guidelines
-
-Ensure that you've read through the extensions guidelines and follow the best practices for creating your extension.
-
-* [Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
-
-## Working with Markdown
-
-You can author your README using Visual Studio Code. Here are some useful editor keyboard shortcuts:
-
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux).
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux).
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets.
-
-## For more information
-
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
-
-**Enjoy!**
+**Enjoy building your knowledge base with VsMemo!** 🚀
