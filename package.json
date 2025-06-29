@@ -79,6 +79,12 @@
         "command": "vsmemo.showLinkStatistics",
         "title": "Show Link Statistics",
         "category": "VsMemo"
+      },
+      {
+        "command": "vsmemo.showGraph",
+        "title": "Show Memo Graph",
+        "category": "VsMemo",
+        "icon": "$(graph)"
       }
     ],
     "markdown.markdownItPlugins": true,
@@ -117,6 +123,11 @@
           "command": "vsmemo.showLinkStatistics",
           "when": "view == backlinkView",
           "group": "1_queries@2"
+        },
+        {
+          "command": "vsmemo.showGraph",
+          "when": "view == backlinkView",
+          "group": "1_queries@3"
         }
       ],
       "view/item/context": [
@@ -158,6 +169,8 @@
     "typescript": "^5.8.3"
   },
   "dependencies": {
+    "cytoscape": "^3.32.0",
+    "cytoscape-cose-bilkent": "^4.1.0",
     "simple-git": "^3.28.0"
   }
 }

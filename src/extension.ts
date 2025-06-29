@@ -13,8 +13,10 @@ import { showBacklinks } from './commands/showBacklinks';
 import { refreshBacklinks } from './commands/refreshBacklinks';
 import { showOrphanedMemos } from './commands/showOrphanedMemos';
 import { showLinkStatistics } from './commands/showLinkStatistics';
+import { showGraph } from './commands/showGraph';
 import { MemoTreeDataProvider } from './views/MemoTreeDataProvider';
 import { BacklinkView } from './views/BacklinkView';
+import { GraphView } from './views/GraphView';
 import { MemoLinkProvider, MemoLinkHoverProvider } from './providers/MemoLinkProvider';
 import { MemoLinkCompletionProvider } from './providers/MemoLinkCompletionProvider';
 import { MemoMarkdownPreviewProvider } from './providers/MemoMarkdownItPlugin';
@@ -57,6 +59,9 @@ export function activate(context: vscode.ExtensionContext) {
   // Initialize backlink index
   backlinkService.buildIndex().catch(console.error);
 
+  // Create graph view
+  const graphView = new GraphView(backlinkService, fileService, configService, context);
+
   // Create memo link providers
   const memoLinkProvider = new MemoLinkProvider(configService, fileService);
   const memoLinkHoverProvider = new MemoLinkHoverProvider(configService, fileService);
@@ -94,6 +99,7 @@ export function activate(context: vscode.ExtensionContext) {
   const refreshBacklinksDisposable = vscode.commands.registerCommand('vsmemo.refreshBacklinks', () => refreshBacklinks(backlinkView));
   const showOrphanedMemosDisposable = vscode.commands.registerCommand('vsmemo.showOrphanedMemos', () => showOrphanedMemos(backlinkView));
   const showLinkStatisticsDisposable = vscode.commands.registerCommand('vsmemo.showLinkStatistics', () => showLinkStatistics(backlinkView));
+  const showGraphDisposable = vscode.commands.registerCommand('vsmemo.showGraph', () => showGraph(graphView));
 
   context.subscriptions.push(
     createMemoDisposable,
@@ -109,6 +115,7 @@ export function activate(context: vscode.ExtensionContext) {
     refreshBacklinksDisposable,
     showOrphanedMemosDisposable,
     showLinkStatisticsDisposable,
+    showGraphDisposable,
     treeView,
     backlinkTreeView,
     definitionProvider,
