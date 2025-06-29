@@ -2,7 +2,7 @@
   "name": "vsmemo",
   "displayName": "VsMemo",
   "description": "Comprehensive memo management system with cross-linking, backlink analysis, and interactive graph visualization for VS Code",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "publisher": "yucchiy",
   "author": {
     "name": "yucchiy"

@@ -79,9 +79,60 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `cytoscape-cose-bilkent` ^4.1.0 - Advanced graph layout algorithm
 - `simple-git` ^3.28.0 - Git operations for memo management
 
+## [0.2.0] - 2025-06-29
+
+### Added
+- **Logging Service Infrastructure**
+  - `ILoggerService` interface for centralized logging
+  - Configurable log levels (ERROR, WARN, INFO, DEBUG)
+  - Structured log formatting with `[VsMemo]` prefix
+  - Optional logger injection across services
+
+- **Graph Data Service**
+  - Extracted graph data generation logic from GraphView
+  - Pure business logic separated from UI rendering
+  - Support for three display modes (FOCUS, CONTEXT, FULL)
+  - Improved testability and maintainability
+
+- **Unified Memo Insights View**
+  - Combined backlinks and note information in single view
+  - Real-time note metadata display
+  - Interactive backlink navigation
+  - Support for orphaned memos and link statistics queries
+
+### Changed
+- **Enhanced IFileService Interface**
+  - Added `listFiles()` for recursive file listing with extension filtering
+  - Added `deleteFile()` for file deletion operations
+  - Added `openTextDocument()` and `showTextDocument()` for better VS Code integration
+  - VsCodeFileService updated with full implementation
+
+- **Improved Error Handling**
+  - BacklinkService enhanced with proper error logging
+  - Structured exception handling with error types
+  - Better error recovery and user feedback
+
+- **Architecture Improvements**
+  - Better separation of concerns in GraphView
+  - Optional dependency injection for logging
+  - Consistent service patterns across codebase
+
+### Fixed
+- Extension packaging now properly includes runtime dependencies
+- Fixed "Cannot find module 'simple-git'" error on extension activation
+- Improved VS Code marketplace metadata and keywords
+- Graph view active file highlighting consistency
+
+### Technical Improvements
+- Comprehensive test infrastructure preparation
+- Updated documentation with architecture changes
+- Improved code organization and maintainability
+- Enhanced TypeScript strict mode compliance
+
 ## [Unreleased]
 
 ### Planned
+- Restore and enhance test coverage for all services
 - Performance optimizations for large memo collections
 - Additional export/import formats
 - Customizable graph visualization themes

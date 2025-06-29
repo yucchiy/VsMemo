@@ -41,13 +41,13 @@ export class VsCodeFileService implements IFileService {
   async listFiles(dirPath: string, extensions: string[]): Promise<string[]> {
     try {
       const files: string[] = [];
-      
+
       const scanDirectory = async (currentPath: string): Promise<void> => {
         const entries = await fs.readdir(currentPath, { withFileTypes: true });
-        
+
         for (const entry of entries) {
           const fullPath = path.join(currentPath, entry.name);
-          
+
           if (entry.isDirectory()) {
             await scanDirectory(fullPath);
           } else if (entry.isFile()) {
@@ -58,7 +58,7 @@ export class VsCodeFileService implements IFileService {
           }
         }
       };
-      
+
       await scanDirectory(dirPath);
       return files;
     } catch (error) {
