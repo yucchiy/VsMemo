@@ -118,7 +118,7 @@ export class CreateMemoUseCase {
 
   private async selectMemoType(memoTypes: MemoType[]): Promise<MemoType> {
     if (memoTypes.length === 0) {
-      throw new Error('No memo types configured. Please create a .vsmemo/types.json file with memo type definitions.');
+      throw new Error('No memo types configured. Please create a .vsmemo/config.json file with memo type definitions.');
     }
 
     const items = memoTypes.map(type => ({

@@ -47,11 +47,11 @@ A comprehensive memo management system for VS Code that transforms how you creat
 1. Install the extension from the VS Code Marketplace
 2. Open a workspace folder
 3. Create a `.vsmemo` directory in your workspace root
-4. Create a `types.json` configuration file (see Configuration section)
+4. Create a `config.json` configuration file (see Configuration section)
 
 ## Configuration
 
-Create a `.vsmemo/types.json` file in your workspace root:
+Create a `.vsmemo/config.json` file in your workspace root:
 
 ```json
 {

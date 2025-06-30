@@ -3,6 +3,18 @@ import { VsCodeConfigService } from '../../services/implementations/VsCodeConfig
 import { IFileService, FileStats } from '../../services/interfaces/IFileService';
 import { MemoConfig } from '../../models/MemoConfig';
 
+class TestVsCodeConfigService extends VsCodeConfigService {
+  private testWorkspaceRoot = '/test/workspace';
+
+  protected getWorkspaceRoot(): string | undefined {
+    return this.testWorkspaceRoot;
+  }
+
+  setWorkspaceRoot(root: string | undefined): void {
+    this.testWorkspaceRoot = root || '/test/workspace';
+  }
+}
+
 class MockFileService implements IFileService {
   private files = new Map<string, string>();
   private workspaceRoot = '/test/workspace';
@@ -23,11 +35,13 @@ class MockFileService implements IFileService {
   }
 
   async writeFile(path: string, content: string): Promise<void> {
-    this.files.set(path, content);
+    const normalizedPath = path.startsWith('/') ? path : `${this.workspaceRoot}/${path}`;
+    this.files.set(normalizedPath, content);
   }
 
   async deleteFile(path: string): Promise<void> {
-    this.files.delete(path);
+    const normalizedPath = path.startsWith('/') ? path : `${this.workspaceRoot}/${path}`;
+    this.files.delete(normalizedPath);
   }
 
   async createDirectory(path: string): Promise<void> {
@@ -65,11 +79,11 @@ class MockFileService implements IFileService {
 
 suite('VsCodeConfigService', () => {
   let mockFileService: MockFileService;
-  let configService: VsCodeConfigService;
+  let configService: TestVsCodeConfigService;
 
   setup(() => {
     mockFileService = new MockFileService();
-    configService = new VsCodeConfigService(mockFileService);
+    configService = new TestVsCodeConfigService(mockFileService);
   });
 
   suite('loadConfig', () => {
@@ -81,7 +95,7 @@ suite('VsCodeConfigService', () => {
     });
 
     test('should handle invalid JSON gracefully', async () => {
-      const configPath = '.vsmemo/types.json';
+      const configPath = '.vsmemo/config.json';
       mockFileService.setFileContent(configPath, 'invalid json');
 
       const config = await configService.loadConfig();
@@ -91,7 +105,7 @@ suite('VsCodeConfigService', () => {
     });
 
     test('should handle missing memoTypes property', async () => {
-      const configPath = '.vsmemo/types.json';
+      const configPath = '.vsmemo/config.json';
       mockFileService.setFileContent(configPath, JSON.stringify({ baseDir: 'notes' }));
 
       const config = await configService.loadConfig();
@@ -102,7 +116,7 @@ suite('VsCodeConfigService', () => {
     });
 
     test('should handle empty memoTypes array', async () => {
-      const configPath = '.vsmemo/types.json';
+      const configPath = '.vsmemo/config.json';
       mockFileService.setFileContent(configPath, JSON.stringify({ memoTypes: [], baseDir: 'notes' }));
 
       const config = await configService.loadConfig();
@@ -113,10 +127,10 @@ suite('VsCodeConfigService', () => {
     });
 
     test('should handle invalid memo type objects', async () => {
-      const configPath = '.vsmemo/types.json';
+      const configPath = '.vsmemo/config.json';
       mockFileService.setFileContent(configPath, JSON.stringify({
         memoTypes: [
-          { id: 'valid', name: 'Valid', templatePathPath: 'templatePath.md' },
+          { id: 'valid', name: 'Valid', templatePath: 'templatePath.md' },
           { name: 'Missing ID', templatePath: 'template.md' },
           { id: 'missing-name', templatePath: 'template.md' },
           { id: 'missing-templatePath', name: 'Missing Template' },
@@ -134,8 +148,8 @@ suite('VsCodeConfigService', () => {
       assert.strictEqual(config.baseDir, 'memos');
     });
 
-    test.skip('should use valid config when properly formatted', async () => {
-      const configPath = '.vsmemo/types.json';
+    test('should use valid config when properly formatted', async () => {
+      const configPath = '.vsmemo/config.json';
       const validConfig: MemoConfig = {
         memoTypes: [
           { id: 'custom', name: 'Custom Note', templatePath: 'custom.md' }
@@ -160,7 +174,7 @@ suite('VsCodeConfigService', () => {
     });
 
     test('should fix missing baseDir', async () => {
-      const configPath = '.vsmemo/types.json';
+      const configPath = '.vsmemo/config.json';
       mockFileService.setFileContent(configPath, JSON.stringify({
         memoTypes: [
           { id: 'test', name: 'Test', templatePath: 'template.md' }
@@ -173,7 +187,7 @@ suite('VsCodeConfigService', () => {
     });
 
     test('should fix missing fileExtensions', async () => {
-      const configPath = '.vsmemo/types.json';
+      const configPath = '.vsmemo/config.json';
       mockFileService.setFileContent(configPath, JSON.stringify({
         memoTypes: [
           { id: 'test', name: 'Test', templatePath: 'template.md' }
@@ -188,7 +202,7 @@ suite('VsCodeConfigService', () => {
     });
 
     test('should fix invalid fileExtensions', async () => {
-      const configPath = '.vsmemo/types.json';
+      const configPath = '.vsmemo/config.json';
       mockFileService.setFileContent(configPath, JSON.stringify({
         memoTypes: [
           { id: 'test', name: 'Test', templatePath: 'template.md' }

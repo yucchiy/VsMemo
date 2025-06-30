@@ -30,7 +30,7 @@ export class ListMemosUseCase {
       const config = await this.configService.loadConfig();
 
       if (config.memoTypes.length === 0) {
-        this.workspaceService.showErrorMessage('No memo types configured. Please check your .vsmemo/types.json file.');
+        this.workspaceService.showErrorMessage('No memo types configured. Please check your .vsmemo/config.json file.');
         return;
       }
 

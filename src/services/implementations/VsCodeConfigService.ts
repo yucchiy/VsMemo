@@ -13,7 +13,13 @@ export class VsCodeConfigService implements IConfigService {
       return this.getMinimalConfig();
     }
 
-    const configPath = path.join(workspaceFolder, '.vsmemo', 'types.json');
+    const configPath = path.join(workspaceFolder, '.vsmemo', 'config.json');
+    const oldConfigPath = path.join(workspaceFolder, '.vsmemo', 'types.json');
+
+    // Check for migration from types.json to config.json
+    if (!(await this.fileService.exists(configPath)) && await this.fileService.exists(oldConfigPath)) {
+      await this.migrateConfig(oldConfigPath, configPath);
+    }
 
     if (!(await this.fileService.exists(configPath))) {
       return this.getMinimalConfig();
@@ -29,7 +35,19 @@ export class VsCodeConfigService implements IConfigService {
     }
   }
 
-  private getWorkspaceRoot(): string | undefined {
+  private async migrateConfig(oldPath: string, newPath: string): Promise<void> {
+    try {
+      const content = await this.fileService.readFile(oldPath);
+      await this.fileService.writeFile(newPath, content);
+      await this.fileService.deleteFile(oldPath);
+      vscode.window.showInformationMessage('Migrated types.json to config.json successfully.');
+    } catch (error) {
+      console.error('Failed to migrate config file:', error);
+      vscode.window.showErrorMessage('Failed to migrate types.json to config.json. Please rename manually.');
+    }
+  }
+
+  protected getWorkspaceRoot(): string | undefined {
     const workspaceFolders = vscode.workspace.workspaceFolders;
     return workspaceFolders?.[0]?.uri.fsPath;
   }
@@ -57,6 +75,7 @@ export class VsCodeConfigService implements IConfigService {
       baseDir?: unknown;
       fileExtensions?: unknown;
       defaultExtension?: unknown;
+      variables?: unknown;
     };
 
     // Set validated memoTypes
@@ -83,6 +102,11 @@ export class VsCodeConfigService implements IConfigService {
       result.defaultExtension = '.md';
     } else {
       result.defaultExtension = validatedConfig.defaultExtension;
+    }
+
+    // Validate and include variables if present
+    if ('variables' in validatedConfig && Array.isArray(validatedConfig.variables)) {
+      result.variables = validatedConfig.variables;
     }
 
     return result as MemoConfig;

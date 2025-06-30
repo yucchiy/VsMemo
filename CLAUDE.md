@@ -86,7 +86,7 @@ Key files and directories:
 - `media/` - Local graph visualization libraries (cytoscape.js)
 - `out/` - Compiled JavaScript output (excluded by .gitignore)
 - `node_modules/` - Dependencies (excluded by .gitignore)
-- `.vsmemo/types.json` - User configuration file
+- `.vsmemo/config.json` - User configuration file
 
 ## Architecture
 
@@ -129,7 +129,7 @@ The extension follows a **layered architecture** with **dependency injection** f
 - **Template-based Creation**: Generate memos using configurable types and templates
 - **Variable Substitution**: Support for system (`{YEAR}`, `{MONTH}`, `{DAY}`, `{DATE}`, `{TITLE}`) and user-defined variables
 - **File Operations**: Rename, delete memo files via Explorer context menu
-- **Configuration**: `.vsmemo/types.json` defines memo types, templates, and settings
+- **Configuration**: `.vsmemo/config.json` defines memo types, templates, and settings
 
 #### 2. Cross-Memo Linking System
 - **Custom URI Scheme**: `vsmemo://path/to/memo.md` for cross-references
