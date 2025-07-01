@@ -51,7 +51,7 @@ A comprehensive memo management system for VS Code that transforms how you creat
 
 ## Configuration
 
-Create a `.vsmemo/config.json` file in your workspace root:
+Create a `.vsmemo/config.json` file in your workspace root. You can use the provided sample configuration in the `examples/` directory as a starting point:
 
 ```json
 {
@@ -61,17 +61,20 @@ Create a `.vsmemo/config.json` file in your workspace root:
     {
       "id": "daily",
       "name": "Daily Note",
-      "templatePath": "templates/daily.md"
+      "templatePath": "templates/daily.md",
+      "baseDir": "daily-notes"
     },
     {
       "id": "project",
       "name": "Project Note",
-      "templatePath": "templates/project.md"
+      "templatePath": "templates/project.md",
+      "baseDir": "projects"
     },
     {
       "id": "meeting",
       "name": "Meeting Note",
-      "templatePath": "templates/meeting.md"
+      "templatePath": "templates/meeting.md",
+      "baseDir": "meetings"
     }
   ],
   "variables": {
@@ -80,6 +83,20 @@ Create a `.vsmemo/config.json` file in your workspace root:
   }
 }
 ```
+
+### Directory Organization
+
+VsMemo uses a three-tier directory structure for flexible memo organization:
+
+1. **Config baseDir**: Global base directory (e.g., `"memos"`)
+2. **MemoType baseDir**: Per-memo-type subdirectory (e.g., `"daily-notes"`, `"projects"`)
+3. **Template baseDir**: Per-template subdirectory (e.g., `"archives"`, `"active"`)
+
+Final path: `workspace/config.baseDir/memoType.baseDir/template.baseDir/file.md`
+
+For example, with the configuration above:
+- Daily notes go to: `memos/daily-notes/archives/2025/01/15.md`
+- Project notes go to: `memos/projects/active/project-name.md`
 
 ### Template Files
 
@@ -90,7 +107,8 @@ Create template files in your `.vsmemo/templates/` directory. For example:
 ---
 title: {TITLE}
 date: {DATE}
-path: daily/{YEAR}/{MONTH}/{DAY}.md
+path: {YEAR}/{MONTH}/{DAY}.md
+baseDir: archives
 tags: [daily]
 ---
 
@@ -111,7 +129,8 @@ tags: [daily]
 title: {TITLE}
 type: project
 created: {DATE}
-path: projects/{TITLE}.md
+path: {TITLE}.md
+baseDir: active
 ---
 
 # {TITLE}
@@ -180,22 +199,28 @@ VsMemo organizes your memos in a structured way:
 ```
 your-workspace/
 ├── .vsmemo/
-│   └── types.json          # Configuration file
-└── memos/                  # Base directory (configurable)
-    ├── daily/              # Memo type directories
-    │   ├── 2025-01-15.md
-    │   └── 2025-01-16.md
-    ├── projects/
-    │   ├── project-alpha.md
-    │   └── project-beta.md
-    └── meetings/
+│   ├── config.json          # Configuration file
+│   └── templates/           # Template files
+│       ├── daily.md
+│       ├── project.md
+│       └── meeting.md
+└── memos/                   # Base directory (configurable)
+    ├── daily-notes/         # MemoType baseDir
+    │   └── archives/        # Template baseDir
+    │       ├── 2025/01/15.md
+    │       └── 2025/01/16.md
+    ├── projects/            # MemoType baseDir
+    │   └── active/          # Template baseDir
+    │       ├── project-alpha.md
+    │       └── project-beta.md
+    └── meetings/            # MemoType baseDir
         ├── team-standup-jan.md
         └── client-review.md
 ```
 
 ## Extension Settings
 
-VsMemo currently uses file-based configuration (`.vsmemo/types.json`). No VS Code settings are required.
+VsMemo currently uses file-based configuration (`.vsmemo/config.json`). No VS Code settings are required.
 
 ## Known Issues
 

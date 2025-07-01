@@ -2,6 +2,7 @@ export interface Template {
   frontmatter?: Record<string, any>;
   content: string;
   path: string;
+  baseDir?: string;
 }
 
 export interface TemplateVariables {

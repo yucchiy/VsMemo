@@ -1,0 +1,35 @@
+{
+  "baseDir": "memos",
+  "fileExtensions": [".md", ".markdown"],
+  "defaultExtension": ".md",
+  "memoTypes": [
+    {
+      "id": "daily",
+      "name": "Daily Note",
+      "templatePath": "templates/daily.md",
+      "baseDir": "daily-notes"
+    },
+    {
+      "id": "project",
+      "name": "Project Note",
+      "templatePath": "templates/project.md",
+      "baseDir": "projects"
+    },
+    {
+      "id": "meeting",
+      "name": "Meeting Note",
+      "templatePath": "templates/meeting.md",
+      "baseDir": "meetings"
+    },
+    {
+      "id": "research",
+      "name": "Research Note",
+      "templatePath": "templates/research.md"
+    }
+  ],
+  "variables": {
+    "AUTHOR": "Your Name",
+    "COMPANY": "Your Company",
+    "PROJECT": "Current Project"
+  }
+}

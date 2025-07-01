@@ -35,6 +35,7 @@ export class TemplateService implements ITemplateService {
     let frontmatter: Record<string, any> | undefined;
     let content = templateContent;
     let path = '';
+    let baseDir: string | undefined;
 
     if (lines[0] === '---') {
       const frontmatterEndIndex = lines.slice(1).findIndex(line => line === '---');
@@ -49,6 +50,11 @@ export class TemplateService implements ITemplateService {
           path = this.replaceVariables(frontmatter.path, variables);
           delete frontmatter.path;
         }
+
+        if (frontmatter.baseDir) {
+          baseDir = this.replaceVariables(frontmatter.baseDir, variables);
+          delete frontmatter.baseDir;
+        }
       }
     }
 
@@ -61,7 +67,8 @@ export class TemplateService implements ITemplateService {
     return {
       frontmatter,
       content,
-      path
+      path,
+      baseDir
     };
   }
 

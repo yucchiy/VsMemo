@@ -116,7 +116,7 @@ export class VsCodeConfigService implements IConfigService {
     return value !== null && typeof value === 'object';
   }
 
-  private isValidMemoType(memoType: unknown): memoType is { id: string; name: string; templatePath: string } {
+  private isValidMemoType(memoType: unknown): memoType is { id: string; name: string; templatePath: string; baseDir?: string } {
     if (!this.isObject(memoType)) {
       return false;
     }
@@ -130,6 +130,11 @@ export class VsCodeConfigService implements IConfigService {
     }
 
     if (!('templatePath' in memoType) || typeof memoType.templatePath !== 'string') {
+      return false;
+    }
+
+    // baseDir is optional, but if present, must be a string
+    if ('baseDir' in memoType && typeof memoType.baseDir !== 'string') {
       return false;
     }
 

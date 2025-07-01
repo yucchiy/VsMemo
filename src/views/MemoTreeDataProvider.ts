@@ -12,11 +12,13 @@ export class MemoTreeItem extends vscode.TreeItem {
     public readonly collapsibleState: vscode.TreeItemCollapsibleState,
     public readonly memoType?: MemoType,
     public readonly filePath?: string,
-    public readonly lastModified?: Date
+    public readonly lastModified?: Date,
+    public readonly isDirectory?: boolean,
+    public readonly directoryPath?: string
   ) {
     super(label, collapsibleState);
 
-    if (filePath) {
+    if (filePath && !isDirectory) {
       // This is a memo file
       this.resourceUri = vscode.Uri.file(filePath);
       this.command = {
@@ -27,6 +29,12 @@ export class MemoTreeItem extends vscode.TreeItem {
       this.contextValue = 'memoFile';
       this.tooltip = `${label}\nLast modified: ${lastModified?.toLocaleString() || 'Unknown'}`;
       this.description = lastModified?.toLocaleDateString();
+      this.iconPath = new vscode.ThemeIcon('file');
+    } else if (isDirectory) {
+      // This is a directory node
+      this.contextValue = 'memoDirectory';
+      this.tooltip = `Directory: ${directoryPath || label}`;
+      this.iconPath = new vscode.ThemeIcon('folder');
     } else if (memoType) {
       // This is a memo type category
       this.contextValue = 'memoType';
@@ -64,9 +72,12 @@ export class MemoTreeDataProvider implements vscode.TreeDataProvider<MemoTreeIte
       if (!element) {
         // Root level - show memo types
         return this.getMemoTypes();
-      } else if (element.memoType) {
-        // Show memos for this type
-        return this.getMemosForType(element.memoType);
+      } else if (element.memoType && !element.isDirectory) {
+        // Show directory structure for this memo type
+        return this.getDirectoryStructure(element.memoType);
+      } else if (element.isDirectory && element.memoType && element.directoryPath) {
+        // Show subdirectories and files for this directory
+        return this.getDirectoryContents(element.memoType, element.directoryPath);
       }
       return [];
     } catch (error) {
@@ -91,7 +102,7 @@ export class MemoTreeDataProvider implements vscode.TreeDataProvider<MemoTreeIte
     }
   }
 
-  private async getMemosForType(memoType: MemoType): Promise<MemoTreeItem[]> {
+  private async getDirectoryStructure(memoType: MemoType): Promise<MemoTreeItem[]> {
     try {
       const workspaceFolders = vscode.workspace.workspaceFolders;
       if (!workspaceFolders || workspaceFolders.length === 0) {
@@ -100,34 +111,54 @@ export class MemoTreeDataProvider implements vscode.TreeDataProvider<MemoTreeIte
 
       const config = await this.configService.loadConfig();
       const workspaceRoot = workspaceFolders[0].uri.fsPath;
-      const searchPath = path.join(workspaceRoot, config.baseDir);
+      const baseSearchPath = path.join(workspaceRoot, config.baseDir);
+      const memoTypeBaseDir = memoType.baseDir || '.';
+      const memoTypeBasePath = path.join(workspaceRoot, config.baseDir, memoTypeBaseDir);
 
-      const memos: Array<{ filePath: string; title: string; lastModified: Date }> = [];
-      await this.searchMemosRecursively(searchPath, memos, memoType, config.fileExtensions);
+      // Collect all memos for this type to build directory structure
+      const memos: Array<{ filePath: string; title: string; lastModified: Date; relativePath: string }> = [];
+      await this.collectMemosWithPaths(baseSearchPath, memos, memoType, config.fileExtensions, baseSearchPath, memoTypeBasePath);
 
-      // Sort by last modified date (newest first)
-      memos.sort((a, b) => b.lastModified.getTime() - a.lastModified.getTime());
-
-      return memos.map(memo =>
-        new MemoTreeItem(
-          memo.title,
-          vscode.TreeItemCollapsibleState.None,
-          undefined,
-          memo.filePath,
-          memo.lastModified
-        )
-      );
+      // Build directory structure from collected memo paths
+      return this.buildDirectoryTree(memos, '', memoType);
     } catch (error) {
-      console.error(`Error loading memos for type ${memoType.name}:`, error);
+      console.error(`Error loading directory structure for type ${memoType.name}:`, error);
       return [];
     }
   }
 
-  private async searchMemosRecursively(
+  private async getDirectoryContents(memoType: MemoType, directoryPath: string): Promise<MemoTreeItem[]> {
+    try {
+      const workspaceFolders = vscode.workspace.workspaceFolders;
+      if (!workspaceFolders || workspaceFolders.length === 0) {
+        return [];
+      }
+
+      const config = await this.configService.loadConfig();
+      const workspaceRoot = workspaceFolders[0].uri.fsPath;
+      const baseSearchPath = path.join(workspaceRoot, config.baseDir);
+      const memoTypeBaseDir = memoType.baseDir || '.';
+      const memoTypeBasePath = path.join(workspaceRoot, config.baseDir, memoTypeBaseDir);
+
+      // Collect all memos for this type
+      const memos: Array<{ filePath: string; title: string; lastModified: Date; relativePath: string }> = [];
+      await this.collectMemosWithPaths(baseSearchPath, memos, memoType, config.fileExtensions, baseSearchPath, memoTypeBasePath);
+
+      // Build directory tree for the specific directory
+      return this.buildDirectoryTree(memos, directoryPath, memoType);
+    } catch (error) {
+      console.error(`Error loading directory contents for ${directoryPath}:`, error);
+      return [];
+    }
+  }
+
+  private async collectMemosWithPaths(
     dir: string,
-    memos: Array<{ filePath: string; title: string; lastModified: Date }>,
+    memos: Array<{ filePath: string; title: string; lastModified: Date; relativePath: string }>,
     targetMemoType: MemoType,
-    fileExtensions: string[]
+    fileExtensions: string[],
+    basePath: string,
+    memoTypeBasePath: string
   ): Promise<void> {
     try {
       if (!(await this.fileService.exists(dir))) {
@@ -142,7 +173,7 @@ export class MemoTreeDataProvider implements vscode.TreeDataProvider<MemoTreeIte
 
         if (stats.isDirectory) {
           // Recursively search subdirectories
-          await this.searchMemosRecursively(fullPath, memos, targetMemoType, fileExtensions);
+          await this.collectMemosWithPaths(fullPath, memos, targetMemoType, fileExtensions, basePath, memoTypeBasePath);
         } else if (isValidMemoFile(entry, fileExtensions)) {
           try {
             const content = await this.fileService.readFile(fullPath);
@@ -151,10 +182,13 @@ export class MemoTreeDataProvider implements vscode.TreeDataProvider<MemoTreeIte
             // Check if this memo matches the target type
             if (frontmatter.type === targetMemoType.id) {
               const title = this.extractTitle(content, frontmatter, entry, fileExtensions);
+              // Calculate relative path from memoType base path, not just config base path
+              const relativePath = path.relative(memoTypeBasePath, fullPath);
               memos.push({
                 filePath: fullPath,
                 title,
-                lastModified: stats.lastModified
+                lastModified: stats.lastModified,
+                relativePath
               });
             }
           } catch (error) {
@@ -165,6 +199,78 @@ export class MemoTreeDataProvider implements vscode.TreeDataProvider<MemoTreeIte
     } catch (error) {
       console.warn(`Failed to search directory ${dir}:`, error);
     }
+  }
+
+  private buildDirectoryTree(
+    memos: Array<{ filePath: string; title: string; lastModified: Date; relativePath: string }>,
+    currentPath: string,
+    memoType: MemoType
+  ): MemoTreeItem[] {
+    const items: MemoTreeItem[] = [];
+    const directories = new Set<string>();
+    const files: Array<{ filePath: string; title: string; lastModified: Date; relativePath: string }> = [];
+
+    // Filter memos for current directory level
+    for (const memo of memos) {
+      const memoDir = path.dirname(memo.relativePath);
+      const normalizedMemoDir = memoDir === '.' ? '' : memoDir;
+
+      if (currentPath === '') {
+        // Root level - show immediate children
+        const pathParts = normalizedMemoDir.split(path.sep).filter(part => part !== '');
+        if (pathParts.length === 0) {
+          // File in root
+          files.push(memo);
+        } else {
+          // Directory in root
+          directories.add(pathParts[0]);
+        }
+      } else {
+        // Subdirectory level
+        if (normalizedMemoDir.startsWith(currentPath)) {
+          const relativePath = path.relative(currentPath, normalizedMemoDir);
+          const pathParts = relativePath.split(path.sep).filter(part => part !== '');
+
+          if (pathParts.length === 0) {
+            // File in current directory
+            files.push(memo);
+          } else {
+            // Subdirectory
+            directories.add(pathParts[0]);
+          }
+        }
+      }
+    }
+
+    // Add directory items (sorted alphabetically)
+    const sortedDirectories = Array.from(directories).sort();
+    for (const dirName of sortedDirectories) {
+      const dirPath = currentPath ? path.join(currentPath, dirName) : dirName;
+      items.push(new MemoTreeItem(
+        dirName,
+        vscode.TreeItemCollapsibleState.Collapsed,
+        memoType,
+        undefined,
+        undefined,
+        true,
+        dirPath
+      ));
+    }
+
+    // Add file items (sorted by last modified date, newest first)
+    files.sort((a, b) => b.lastModified.getTime() - a.lastModified.getTime());
+    for (const file of files) {
+      items.push(new MemoTreeItem(
+        file.title,
+        vscode.TreeItemCollapsibleState.None,
+        undefined,
+        file.filePath,
+        file.lastModified,
+        false
+      ));
+    }
+
+    return items;
   }
 
   private extractFrontmatter(content: string): Record<string, any> {

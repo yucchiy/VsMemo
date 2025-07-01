@@ -148,6 +148,40 @@ Content here`;
       assert.ok(result.frontmatter.date && result.frontmatter.date.startsWith('2025-'));
       assert.ok(!('path' in (result.frontmatter || {})), 'path property should be removed from frontmatter');
       assert.ok(result.path.startsWith('notes/2025/') && result.path.endsWith('.md'));
+      assert.strictEqual(result.baseDir, undefined);
+    });
+
+    test('should process template with baseDir from frontmatter', async () => {
+      const templateContent = `---
+title: {TITLE}
+date: {DATE}
+baseDir: projects/{YEAR}
+path: {TITLE}.md
+---
+
+# {TITLE}
+
+Project content here`;
+      const templateFilePath = 'templates/project.md';
+      const configBasePath = '/workspace/.vsmemo';
+      const fullTemplatePath = '/workspace/.vsmemo/templates/project.md';
+
+      mockFileService.setFileContent(fullTemplatePath, templateContent);
+
+      const registry = new VariableRegistry();
+      const presetInputs = {
+        TITLE: 'New Project'
+      };
+
+      const result = await templateService.processTemplateFromFile(templateFilePath, configBasePath, registry, presetInputs);
+
+      assert.strictEqual(result.content, '# New Project\n\nProject content here');
+      assert.ok(result.frontmatter);
+      assert.strictEqual(result.frontmatter.title, 'New Project');
+      assert.ok(!('baseDir' in (result.frontmatter || {})), 'baseDir property should be removed from frontmatter');
+      assert.ok(!('path' in (result.frontmatter || {})), 'path property should be removed from frontmatter');
+      assert.strictEqual(result.path, 'New Project.md');
+      assert.ok(result.baseDir && result.baseDir.startsWith('projects/2025'));
     });
 
     test('should handle file not found error', async () => {

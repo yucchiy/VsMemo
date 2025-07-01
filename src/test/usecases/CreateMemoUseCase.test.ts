@@ -78,6 +78,7 @@ class MockFileService implements IFileService {
 
 class MockTemplateService implements ITemplateService {
   private customPath?: string;
+  private customBaseDir?: string;
 
   async processTemplateFromFile(templateFilePath: string, configBasePath: string, registry: VariableRegistry, presetInputs?: Record<string, string>): Promise<Template> {
     // Mock: simulate that TITLE variable is resolved internally
@@ -85,12 +86,17 @@ class MockTemplateService implements ITemplateService {
     return {
       content: `Processed: ${templateFilePath}`,
       path: this.customPath || `${title}.md`,
-      frontmatter: { title: title }
+      frontmatter: { title: title },
+      baseDir: this.customBaseDir
     };
   }
 
   setCustomPath(path?: string): void {
     this.customPath = path;
+  }
+
+  setCustomBaseDir(baseDir?: string): void {
+    this.customBaseDir = baseDir;
   }
 }
 
@@ -248,6 +254,93 @@ suite('CreateMemoUseCase', () => {
 
     assert.ok(writtenContent);
     assert.ok(writtenContent.includes('title: Test Title'));
+    assert.ok(mockFileService.openedFiles.includes(expectedPath));
+  });
+
+  test('should use template baseDir in path generation', async () => {
+    mockTemplateService.setCustomPath('project.md');
+    mockTemplateService.setCustomBaseDir('projects/2025');
+
+    await useCase.execute('Daily Note', 'Test Project');
+
+    const expectedPath = '/test/workspace/memos/projects/2025/project.md';
+    const writtenContent = mockFileService.getWrittenContent(expectedPath);
+
+    assert.ok(writtenContent);
+    assert.ok(writtenContent.includes('title: Test Project'));
+    assert.ok(mockFileService.openedFiles.includes(expectedPath));
+  });
+
+  test('should handle template baseDir with no path', async () => {
+    mockTemplateService.setCustomPath(undefined);
+    mockTemplateService.setCustomBaseDir('archives');
+
+    await useCase.execute('Daily Note', 'Archived Note');
+
+    const expectedPath = '/test/workspace/memos/archives/Archived Note.md';
+    const writtenContent = mockFileService.getWrittenContent(expectedPath);
+
+    assert.ok(writtenContent);
+    assert.ok(writtenContent.includes('title: Archived Note'));
+    assert.ok(mockFileService.openedFiles.includes(expectedPath));
+  });
+
+  test('should use memoType baseDir in path generation', async () => {
+    const customConfig: MemoConfig = {
+      memoTypes: [
+        {
+          id: 'project',
+          name: 'Project Note',
+          templatePath: 'templates/project.md',
+          baseDir: 'projects'
+        }
+      ],
+      baseDir: 'memos',
+      fileExtensions: ['.md'],
+      defaultExtension: '.md'
+    };
+
+    mockConfigService = new MockConfigService(customConfig);
+    useCase = new CreateMemoUseCase(mockConfigService, mockFileService, mockTemplateService, mockWorkspaceService);
+    mockTemplateService.setCustomPath('project.md');
+
+    await useCase.execute('Project Note', 'New Project');
+
+    const expectedPath = '/test/workspace/memos/projects/project.md';
+    const writtenContent = mockFileService.getWrittenContent(expectedPath);
+
+    assert.ok(writtenContent);
+    assert.ok(writtenContent.includes('title: New Project'));
+    assert.ok(mockFileService.openedFiles.includes(expectedPath));
+  });
+
+  test('should combine memoType baseDir and template baseDir', async () => {
+    const customConfig: MemoConfig = {
+      memoTypes: [
+        {
+          id: 'daily',
+          name: 'Daily Note',
+          templatePath: 'templates/daily.md',
+          baseDir: 'daily'
+        }
+      ],
+      baseDir: 'memos',
+      fileExtensions: ['.md'],
+      defaultExtension: '.md'
+    };
+
+    mockConfigService = new MockConfigService(customConfig);
+    useCase = new CreateMemoUseCase(mockConfigService, mockFileService, mockTemplateService, mockWorkspaceService);
+    mockTemplateService.setCustomPath('note.md');
+    mockTemplateService.setCustomBaseDir('2025/01');
+
+    await useCase.execute('Daily Note', 'Test Note');
+
+    const expectedPath = '/test/workspace/memos/daily/2025/01/note.md';
+    const writtenContent = mockFileService.getWrittenContent(expectedPath);
+
+    assert.ok(writtenContent);
+    assert.ok(writtenContent.includes('title: Test Note'));
     assert.ok(mockFileService.openedFiles.includes(expectedPath));
   });
 

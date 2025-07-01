@@ -79,12 +79,15 @@ export class CreateMemoUseCase {
     const processedTemplate = await this.templateService.processTemplateFromFile(memoType.templatePath, configBasePath, registry, presetInputs);
 
     let fullPath: string;
+    const memoTypeBaseDir = memoType.baseDir || '.';
+    const templateBaseDir = processedTemplate.baseDir || '.';
+
     if (processedTemplate.path) {
-      // Template path is relative to baseDir
-      fullPath = path.join(workspaceRoot, config.baseDir, processedTemplate.path);
+      // Template path is relative to config.baseDir + memoType.baseDir + template.baseDir
+      fullPath = path.join(workspaceRoot, config.baseDir, memoTypeBaseDir, templateBaseDir, processedTemplate.path);
     } else {
       const fileName = title ? `${title}${config.defaultExtension}` : `${formatDate(new Date())}${config.defaultExtension}`;
-      fullPath = path.join(workspaceRoot, config.baseDir, fileName);
+      fullPath = path.join(workspaceRoot, config.baseDir, memoTypeBaseDir, templateBaseDir, fileName);
     }
 
     const fileExists = await this.fileService.exists(fullPath);
