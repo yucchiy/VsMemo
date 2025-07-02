@@ -3,7 +3,9 @@ import * as path from 'path';
 import { IConfigService } from '../services/interfaces/IConfigService';
 import { IFileService } from '../services/interfaces/IFileService';
 import { ITemplateService } from '../services/interfaces/ITemplateService';
+import { IMetadataService } from '../services/interfaces/IMetadataService';
 import { MemoType } from '../models/MemoType';
+import { MemoMetadata } from '../models/MemoMetadata';
 import { VariableRegistry } from '../variables/VariableRegistry';
 import { formatDate } from '../utils/dateUtils';
 import { MemoEvents } from '../events/MemoEvents';
@@ -39,7 +41,8 @@ export class CreateMemoUseCase {
     private configService: IConfigService,
     private fileService: IFileService,
     private templateService: ITemplateService,
-    private workspaceService: IWorkspaceService
+    private workspaceService: IWorkspaceService,
+    private metadataService?: IMetadataService
   ) {}
 
   async execute(memoTypeName?: string, title?: string): Promise<void> {
@@ -100,14 +103,25 @@ export class CreateMemoUseCase {
 
       let content = processedTemplate.content;
 
-      // Add type to frontmatter
-      const frontmatter = processedTemplate.frontmatter || {};
-      frontmatter.type = memoType.id;
+      // Process metadata with MetadataService if available
+      if (this.metadataService) {
+        // Convert frontmatter to metadata structure
+        const rawFrontmatter = processedTemplate.frontmatter || {};
+        rawFrontmatter.type = memoType.id;
 
-      const frontmatterString = Object.entries(frontmatter)
-        .map(([key, value]) => `${key}: ${value}`)
-        .join('\n');
-      content = `---\n${frontmatterString}\n---\n\n${content}`;
+        const metadata = this.metadataService.classifyFrontmatter(rawFrontmatter);
+        const frontmatterString = this.metadataService.serializeMetadata(metadata);
+        content = `---\n${frontmatterString}\n---\n\n${content}`;
+      } else {
+        // Fallback to old behavior
+        const frontmatter = processedTemplate.frontmatter || {};
+        frontmatter.type = memoType.id;
+
+        const frontmatterString = Object.entries(frontmatter)
+          .map(([key, value]) => `${key}: ${value}`)
+          .join('\n');
+        content = `---\n${frontmatterString}\n---\n\n${content}`;
+      }
 
       await this.fileService.writeFile(fullPath, content);
 

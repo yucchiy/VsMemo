@@ -5,6 +5,10 @@ author: {AUTHOR}
 path: {YEAR}/{MONTH}/{DAY}.md
 baseDir: archives
 tags: [daily]
+mood: neutral
+energy: 5
+weather: sunny
+focus: productivity
 ---
 
 # Daily Note: {TITLE}

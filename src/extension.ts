@@ -23,6 +23,7 @@ import { MemoMarkdownPreviewProvider } from './providers/MemoMarkdownItPlugin';
 import { VsCodeConfigService } from './services/implementations/VsCodeConfigService';
 import { VsCodeFileService } from './services/implementations/VsCodeFileService';
 import { BacklinkService } from './services/implementations/BacklinkService';
+import { MetadataService } from './services/implementations/MetadataService';
 import { LoggerService } from './services/implementations/LoggerService';
 import { LogLevel } from './services/interfaces/ILoggerService';
 
@@ -34,6 +35,7 @@ export function activate(context: vscode.ExtensionContext) {
   // Initialize services
   const fileService = new VsCodeFileService();
   const configService = new VsCodeConfigService(fileService);
+  const metadataService = new MetadataService();
 
   // Get workspace root
   const workspaceFolders = vscode.workspace.workspaceFolders;
@@ -45,7 +47,7 @@ export function activate(context: vscode.ExtensionContext) {
   const backlinkService = new BacklinkService(fileService, configService, workspaceRoot, logger);
 
   // Create memo tree data provider
-  const memoTreeProvider = new MemoTreeDataProvider(configService, fileService);
+  const memoTreeProvider = new MemoTreeDataProvider(configService, fileService, metadataService);
 
   // Register tree view
   const treeView = vscode.window.createTreeView('vsmemoExplorer', {
@@ -54,7 +56,7 @@ export function activate(context: vscode.ExtensionContext) {
   });
 
   // Create memo insights view
-  const memoInsightsView = new MemoInsightsView(backlinkService);
+  const memoInsightsView = new MemoInsightsView(backlinkService, fileService, metadataService);
   const memoInsightsTreeView = vscode.window.createTreeView('memoInsightsView', {
     treeDataProvider: memoInsightsView,
     showCollapseAll: true
@@ -68,7 +70,7 @@ export function activate(context: vscode.ExtensionContext) {
 
   // Create memo link providers
   const memoLinkProvider = new MemoLinkProvider(configService, fileService);
-  const memoLinkHoverProvider = new MemoLinkHoverProvider(configService, fileService);
+  const memoLinkHoverProvider = new MemoLinkHoverProvider(configService, fileService, metadataService);
   const memoLinkCompletionProvider = new MemoLinkCompletionProvider(configService, fileService);
   const memoMarkdownPreviewProvider = new MemoMarkdownPreviewProvider();
 

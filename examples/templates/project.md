@@ -7,6 +7,11 @@ company: {COMPANY}
 path: {TITLE}.md
 baseDir: active
 tags: [project]
+status: planning
+priority: 3
+category: development
+estimatedHours: 40
+dueDate: 2025-02-01
 ---
 
 # Project: {TITLE}

@@ -1,6 +1,9 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import { IBacklinkService, Backlink, OutboundLink } from '../services/interfaces/IBacklinkService';
+import { IMetadataService } from '../services/interfaces/IMetadataService';
+import { IFileService } from '../services/interfaces/IFileService';
+import { MemoMetadata } from '../models/MemoMetadata';
 
 export class MemoInsightsTreeItem extends vscode.TreeItem {
   constructor(
@@ -68,7 +71,9 @@ export class MemoInsightsView implements vscode.TreeDataProvider<MemoInsightsTre
   private isLoading = false;
 
   constructor(
-    private backlinkService: IBacklinkService
+    private backlinkService: IBacklinkService,
+    private fileService?: IFileService,
+    private metadataService?: IMetadataService
   ) {
     // Listen to active editor changes
     vscode.window.onDidChangeActiveTextEditor(async (editor) => {
@@ -184,7 +189,7 @@ export class MemoInsightsView implements vscode.TreeDataProvider<MemoInsightsTre
 
       return items;
     } else if (element.filePath === 'noteinfo') {
-      // Show note information
+      // Show enhanced note information with metadata
       if (!this.currentFile) {
         return [];
       }
@@ -197,12 +202,80 @@ export class MemoInsightsView implements vscode.TreeDataProvider<MemoInsightsTre
           ? path.relative(workspaceFolders[0].uri.fsPath, this.currentFile)
           : fileName;
 
-        items.push(new MemoInsightsTreeItem(`File: ${fileName}`, vscode.TreeItemCollapsibleState.None));
+        // Basic file information
+        items.push(new MemoInsightsTreeItem(`${fileName}`, vscode.TreeItemCollapsibleState.None));
         items.push(new MemoInsightsTreeItem(`Path: ${relativePath}`, vscode.TreeItemCollapsibleState.None));
-        items.push(new MemoInsightsTreeItem(`Backlinks: ${Array.from(this.backlinks.values()).reduce((sum, links) => sum + links.length, 0)}`, vscode.TreeItemCollapsibleState.None));
-        items.push(new MemoInsightsTreeItem(`Outbound Links: ${this.outboundLinks.length}`, vscode.TreeItemCollapsibleState.None));
+
+        // Load and display metadata if available
+        if (this.fileService && this.metadataService) {
+          try {
+            const content = await this.fileService.readFile(this.currentFile);
+            const metadata = this.metadataService.extractMetadata(content);
+
+            if (metadata) {
+              // System metadata section
+              const memoInfoItem = new MemoInsightsTreeItem('Memo Information', vscode.TreeItemCollapsibleState.None);
+              memoInfoItem.iconPath = new vscode.ThemeIcon('note');
+              items.push(memoInfoItem);
+
+              if (metadata.system.type) {
+                items.push(new MemoInsightsTreeItem(`  Type: ${metadata.system.type}`, vscode.TreeItemCollapsibleState.None));
+              }
+
+              // Special metadata
+              if (metadata.special.title) {
+                items.push(new MemoInsightsTreeItem(`  Title: ${metadata.special.title}`, vscode.TreeItemCollapsibleState.None));
+              }
+
+              if (metadata.special.tags && metadata.special.tags.length > 0) {
+                items.push(new MemoInsightsTreeItem(`  Tags: ${metadata.special.tags.join(', ')}`, vscode.TreeItemCollapsibleState.None));
+              }
+
+              // User metadata section
+              const userKeys = Object.keys(metadata.user);
+              if (userKeys.length > 0) {
+                const customPropsItem = new MemoInsightsTreeItem('Custom Properties', vscode.TreeItemCollapsibleState.None);
+                customPropsItem.iconPath = new vscode.ThemeIcon('settings-gear');
+                items.push(customPropsItem);
+
+                // Show all user properties (not limited like hover)
+                for (const key of userKeys) {
+                  const value = metadata.user[key];
+                  const formattedName = this.formatPropertyName(key);
+                  const formattedValue = this.formatPropertyValue(value);
+                  items.push(new MemoInsightsTreeItem(`  ${formattedName}: ${formattedValue}`, vscode.TreeItemCollapsibleState.None));
+                }
+              }
+            }
+          } catch (metadataError) {
+            console.warn('Failed to load metadata for note info:', metadataError);
+          }
+        }
+
+        // Connection statistics
+        const backlinksCount = Array.from(this.backlinks.values()).reduce((sum, links) => sum + links.length, 0);
+        const connectionsItem = new MemoInsightsTreeItem('Connections', vscode.TreeItemCollapsibleState.None);
+        connectionsItem.iconPath = new vscode.ThemeIcon('link');
+        items.push(connectionsItem);
+        items.push(new MemoInsightsTreeItem(`  Backlinks: ${backlinksCount}`, vscode.TreeItemCollapsibleState.None));
+        items.push(new MemoInsightsTreeItem(`  Outbound Links: ${this.outboundLinks.length}`, vscode.TreeItemCollapsibleState.None));
+
+        // File statistics
+        if (this.fileService) {
+          try {
+            const stats = await this.fileService.getStats(this.currentFile);
+            const fileInfoItem = new MemoInsightsTreeItem('File Information', vscode.TreeItemCollapsibleState.None);
+            fileInfoItem.iconPath = new vscode.ThemeIcon('info');
+            items.push(fileInfoItem);
+            items.push(new MemoInsightsTreeItem(`  Modified: ${stats.lastModified.toLocaleString()}`, vscode.TreeItemCollapsibleState.None));
+          } catch (statsError) {
+            console.warn('Failed to load file stats:', statsError);
+          }
+        }
+
       } catch (error) {
-        items.push(new MemoInsightsTreeItem('Error loading note info', vscode.TreeItemCollapsibleState.None));
+        items.push(new MemoInsightsTreeItem('❌ Error loading note info', vscode.TreeItemCollapsibleState.None));
+        console.error('Error in note info:', error);
       }
 
       return items;
@@ -297,6 +370,63 @@ export class MemoInsightsView implements vscode.TreeDataProvider<MemoInsightsTre
     vscode.window.showInformationMessage(
       'Link information is now available in the Memo Links tree view.'
     );
+  }
+
+  /**
+   * Get icon for property based on name
+   */
+  private getPropertyIcon(key: string): string {
+    const lowerKey = key.toLowerCase();
+
+    // Common property icons
+    if (lowerKey.includes('author')) {return '👤';}
+    if (lowerKey.includes('status')) {return '📊';}
+    if (lowerKey.includes('priority')) {return '⚡';}
+    if (lowerKey.includes('project')) {return '🚀';}
+    if (lowerKey.includes('date') || lowerKey.includes('time')) {return '📅';}
+    if (lowerKey.includes('category')) {return '📁';}
+    if (lowerKey.includes('company')) {return '🏢';}
+    if (lowerKey.includes('mood')) {return '😊';}
+    if (lowerKey.includes('energy')) {return '⚡';}
+    if (lowerKey.includes('weather')) {return '🌤️';}
+    if (lowerKey.includes('focus')) {return '🎯';}
+    if (lowerKey.includes('hours') || lowerKey.includes('duration')) {return '⏱️';}
+
+    // Default icon
+    return '•';
+  }
+
+  /**
+   * Format property name for display
+   */
+  private formatPropertyName(key: string): string {
+    // Convert camelCase or snake_case to Title Case
+    return key
+      .replace(/([A-Z])/g, ' $1')
+      .replace(/_/g, ' ')
+      .trim()
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+  }
+
+  /**
+   * Format property value for display
+   */
+  private formatPropertyValue(value: any): string {
+    if (value === null || value === undefined) {
+      return '_Not set_';
+    }
+
+    if (Array.isArray(value)) {
+      return value.join(', ');
+    }
+
+    if (typeof value === 'object') {
+      return JSON.stringify(value);
+    }
+
+    return String(value);
   }
 }
 

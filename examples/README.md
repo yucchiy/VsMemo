@@ -63,12 +63,33 @@ If any baseDir is not specified, it defaults to `"."` (current directory level).
 Each template demonstrates different aspects of VsMemo:
 
 - **daily.md**: Shows date-based organization with nested year/month/day structure
+  - User metadata: `mood`, `energy`, `weather`, `focus`
 - **project.md**: Shows single-file organization within a themed directory
+  - User metadata: `status`, `priority`, `category`, `estimatedHours`, `dueDate`
 - **meeting.md**: Shows date-based organization without template baseDir
 - **research.md**: Shows simple organization without memoType baseDir
 
 All templates include:
 - Variable substitution (`{TITLE}`, `{DATE}`, `{AUTHOR}`, etc.)
-- Frontmatter configuration
+- Frontmatter configuration with system, special, and user metadata
 - Path and baseDir specifications
 - Rich formatting with emojis and structured sections
+
+## Metadata Structure
+
+VsMemo uses a three-tier metadata system:
+
+### System Metadata (Reserved)
+- `type`: Memo type (automatically set)
+- `path`: Template file path
+- `baseDir`: Template base directory
+
+### Special Metadata (Enhanced features)
+- `title`: Memo title (priority display)
+- `tags`: Tags for search/filtering
+
+### User Metadata (Completely customizable)
+- Any other properties you define
+- Examples: `author`, `status`, `priority`, `mood`, `project`, etc.
+- Displayed in hover tooltips with smart formatting
+- Can be used for future search and filtering features

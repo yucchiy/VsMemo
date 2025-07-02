@@ -2,7 +2,9 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import { IConfigService } from '../services/interfaces/IConfigService';
 import { IFileService } from '../services/interfaces/IFileService';
+import { IMetadataService } from '../services/interfaces/IMetadataService';
 import { MemoType } from '../models/MemoType';
+import { MemoMetadata } from '../models/MemoMetadata';
 import { isValidMemoFile, extractFileNameWithoutExtension } from '../utils/fileUtils';
 import { MemoEvents } from '../events/MemoEvents';
 
@@ -50,7 +52,8 @@ export class MemoTreeDataProvider implements vscode.TreeDataProvider<MemoTreeIte
 
   constructor(
     private configService: IConfigService,
-    private fileService: IFileService
+    private fileService: IFileService,
+    private metadataService?: IMetadataService
   ) {
     // Subscribe to memo events for auto-refresh
     const memoEvents = MemoEvents.getInstance();
@@ -177,11 +180,11 @@ export class MemoTreeDataProvider implements vscode.TreeDataProvider<MemoTreeIte
         } else if (isValidMemoFile(entry, fileExtensions)) {
           try {
             const content = await this.fileService.readFile(fullPath);
-            const frontmatter = this.extractFrontmatter(content);
+            const metadata = this.extractMetadata(content);
 
             // Check if this memo matches the target type
-            if (frontmatter.type === targetMemoType.id) {
-              const title = this.extractTitle(content, frontmatter, entry, fileExtensions);
+            if (metadata && metadata.system.type === targetMemoType.id) {
+              const title = this.extractTitle(content, metadata, entry, fileExtensions);
               // Calculate relative path from memoType base path, not just config base path
               const relativePath = path.relative(memoTypeBasePath, fullPath);
               memos.push({
@@ -273,6 +276,28 @@ export class MemoTreeDataProvider implements vscode.TreeDataProvider<MemoTreeIte
     return items;
   }
 
+  private extractMetadata(content: string): MemoMetadata | null {
+    if (this.metadataService) {
+      return this.metadataService.extractMetadata(content);
+    }
+
+    // Fallback to old behavior
+    const frontmatter = this.extractFrontmatter(content);
+    if (!frontmatter.type) {
+      return null;
+    }
+
+    // Convert to metadata structure
+    return {
+      system: { type: frontmatter.type },
+      special: {
+        title: frontmatter.title,
+        tags: frontmatter.tags
+      },
+      user: {}
+    };
+  }
+
   private extractFrontmatter(content: string): Record<string, any> {
     const frontmatterMatch = content.match(/^---\s*\n([\s\S]*?)\n---/);
     if (!frontmatterMatch) {
@@ -296,13 +321,15 @@ export class MemoTreeDataProvider implements vscode.TreeDataProvider<MemoTreeIte
 
   private extractTitle(
     content: string,
-    frontmatter: Record<string, any>,
+    metadata: MemoMetadata | Record<string, any>,
     fileName: string,
     fileExtensions: string[]
   ): string {
-    // Try to get title from frontmatter first
-    if (frontmatter.title) {
-      return frontmatter.title;
+    // Check if it's MemoMetadata or old frontmatter format
+    if ('special' in metadata && metadata.special?.title) {
+      return metadata.special.title;
+    } else if ('title' in metadata && metadata.title) {
+      return metadata.title as string;
     }
 
     // Try to extract from first heading
