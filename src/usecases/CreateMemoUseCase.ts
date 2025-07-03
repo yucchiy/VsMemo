@@ -12,9 +12,12 @@ import { MemoEvents } from '../events/MemoEvents';
 
 export interface IWorkspaceService {
   getWorkspaceRoot(): string | undefined;
-  showQuickPick<T extends vscode.QuickPickItem>(items: readonly T[], options?: vscode.QuickPickOptions): Promise<T | undefined>;
+  showQuickPick<T extends vscode.QuickPickItem>(items: readonly T[], options?: vscode.QuickPickOptions & { canPickMany?: false }): Promise<T | undefined>;
+  showQuickPick<T extends vscode.QuickPickItem>(items: readonly T[], options: vscode.QuickPickOptions & { canPickMany: true }): Promise<T[] | undefined>;
+  showQuickPick<T extends vscode.QuickPickItem>(items: readonly T[], options?: vscode.QuickPickOptions): Promise<T | T[] | undefined>;
   showInputBox(options?: vscode.InputBoxOptions): Promise<string | undefined>;
   showErrorMessage(message: string): void;
+  showInformationMessage(message: string): void;
 }
 
 export class VsCodeWorkspaceService implements IWorkspaceService {
@@ -23,8 +26,10 @@ export class VsCodeWorkspaceService implements IWorkspaceService {
     return workspaceFolders?.[0]?.uri.fsPath;
   }
 
-  async showQuickPick<T extends vscode.QuickPickItem>(items: readonly T[], options?: vscode.QuickPickOptions): Promise<T | undefined> {
-    return await vscode.window.showQuickPick(items, options);
+  async showQuickPick<T extends vscode.QuickPickItem>(items: readonly T[], options?: vscode.QuickPickOptions & { canPickMany?: false }): Promise<T | undefined>;
+  async showQuickPick<T extends vscode.QuickPickItem>(items: readonly T[], options: vscode.QuickPickOptions & { canPickMany: true }): Promise<T[] | undefined>;
+  async showQuickPick<T extends vscode.QuickPickItem>(items: readonly T[], options?: vscode.QuickPickOptions): Promise<T | T[] | undefined> {
+    return await vscode.window.showQuickPick(items, options as any) as any;
   }
 
   async showInputBox(options?: vscode.InputBoxOptions): Promise<string | undefined> {
@@ -33,6 +38,10 @@ export class VsCodeWorkspaceService implements IWorkspaceService {
 
   showErrorMessage(message: string): void {
     vscode.window.showErrorMessage(message);
+  }
+
+  showInformationMessage(message: string): void {
+    vscode.window.showInformationMessage(message);
   }
 }
 

@@ -228,7 +228,18 @@ export class MemoInsightsView implements vscode.TreeDataProvider<MemoInsightsTre
               }
 
               if (metadata.special.tags && metadata.special.tags.length > 0) {
-                items.push(new MemoInsightsTreeItem(`  Tags: ${metadata.special.tags.join(', ')}`, vscode.TreeItemCollapsibleState.None));
+                for (const tag of metadata.special.tags) {
+                  const tagItem = new MemoInsightsTreeItem(`  Tags: ${tag}`, vscode.TreeItemCollapsibleState.None);
+                  tagItem.command = {
+                    command: 'vsmemo.searchByTag',
+                    title: 'Search by Tag',
+                    arguments: [tag]
+                  };
+                  tagItem.contextValue = 'tagItem';
+                  tagItem.tooltip = `Click to search for memos with tag: ${tag}`;
+                  tagItem.iconPath = new vscode.ThemeIcon('tag');
+                  items.push(tagItem);
+                }
               }
 
               // User metadata section

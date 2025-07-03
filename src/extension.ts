@@ -1,6 +1,7 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
+import * as path from 'path';
 import { createMemo } from './commands/createMemo';
 import { listMemos } from './commands/listMemos';
 import { commitChanges } from './commands/commitChanges';
@@ -14,6 +15,7 @@ import { refreshBacklinks } from './commands/refreshBacklinks';
 import { showOrphanedMemos } from './commands/showOrphanedMemos';
 import { showLinkStatistics } from './commands/showLinkStatistics';
 import { showGraph } from './commands/showGraph';
+import { searchByTag } from './commands/searchByTag';
 import { MemoTreeDataProvider } from './views/MemoTreeDataProvider';
 import { MemoInsightsView } from './views/BacklinkView';
 import { GraphView } from './views/GraphView';
@@ -24,6 +26,7 @@ import { VsCodeConfigService } from './services/implementations/VsCodeConfigServ
 import { VsCodeFileService } from './services/implementations/VsCodeFileService';
 import { BacklinkService } from './services/implementations/BacklinkService';
 import { MetadataService } from './services/implementations/MetadataService';
+import { TagIndexService } from './services/implementations/TagIndexService';
 import { LoggerService } from './services/implementations/LoggerService';
 import { LogLevel } from './services/interfaces/ILoggerService';
 
@@ -46,6 +49,9 @@ export function activate(context: vscode.ExtensionContext) {
   // Create backlink service
   const backlinkService = new BacklinkService(fileService, configService, workspaceRoot, logger);
 
+  // Create tag index service
+  const tagIndexService = new TagIndexService(fileService, configService, metadataService, workspaceRoot);
+
   // Create memo tree data provider
   const memoTreeProvider = new MemoTreeDataProvider(configService, fileService, metadataService);
 
@@ -64,6 +70,16 @@ export function activate(context: vscode.ExtensionContext) {
 
   // Initialize backlink index
   backlinkService.buildIndex().catch(console.error);
+
+  // Initialize tag index
+  tagIndexService.buildIndex().catch(console.error);
+
+  // Update tag index when files are saved
+  vscode.workspace.onDidSaveTextDocument(async (document) => {
+    if (document.uri.scheme === 'file' && path.extname(document.uri.fsPath) === '.md') {
+      await tagIndexService.updateFile(document.uri.fsPath);
+    }
+  });
 
   // Create graph view
   const graphView = new GraphView(backlinkService, fileService, configService, context);
@@ -106,6 +122,7 @@ export function activate(context: vscode.ExtensionContext) {
   const showOrphanedMemosDisposable = vscode.commands.registerCommand('vsmemo.showOrphanedMemos', () => showOrphanedMemos(memoInsightsView));
   const showLinkStatisticsDisposable = vscode.commands.registerCommand('vsmemo.showLinkStatistics', () => showLinkStatistics(memoInsightsView));
   const showGraphDisposable = vscode.commands.registerCommand('vsmemo.showGraph', () => showGraph(graphView));
+  const searchByTagDisposable = vscode.commands.registerCommand('vsmemo.searchByTag', (tag?: string) => searchByTag(tag));
 
   context.subscriptions.push(
     createMemoDisposable,
@@ -122,6 +139,7 @@ export function activate(context: vscode.ExtensionContext) {
     showOrphanedMemosDisposable,
     showLinkStatisticsDisposable,
     showGraphDisposable,
+    searchByTagDisposable,
     treeView,
     memoInsightsTreeView,
     definitionProvider,

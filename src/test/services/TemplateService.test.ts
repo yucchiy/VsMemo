@@ -84,6 +84,10 @@ class MockWorkspaceService implements IWorkspaceService {
   showErrorMessage(message: string): void {
     // Mock implementation
   }
+
+  showInformationMessage(message: string): void {
+    // Mock implementation
+  }
 }
 
 suite('TemplateService', () => {

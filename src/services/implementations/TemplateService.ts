@@ -79,7 +79,31 @@ export class TemplateService implements ITemplateService {
       const colonIndex = line.indexOf(':');
       if (colonIndex !== -1) {
         const key = line.substring(0, colonIndex).trim();
-        const value = line.substring(colonIndex + 1).trim();
+        let value: any = line.substring(colonIndex + 1).trim();
+
+        // Parse arrays (simple format: [item1, item2])
+        if (value.startsWith('[') && value.endsWith(']')) {
+          value = value
+            .slice(1, -1)
+            .split(',')
+            .map((item: string) => item.trim())
+            .filter((item: string) => item.length > 0);
+        }
+        // Parse booleans
+        else if (value === 'true') {
+          value = true;
+        }
+        else if (value === 'false') {
+          value = false;
+        }
+        // Parse numbers
+        else if (/^\d+$/.test(value)) {
+          value = parseInt(value, 10);
+        }
+        else if (/^\d+\.\d+$/.test(value)) {
+          value = parseFloat(value);
+        }
+
         frontmatter[key] = value;
       }
     }

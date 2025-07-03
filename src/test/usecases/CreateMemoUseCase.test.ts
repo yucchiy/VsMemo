@@ -122,6 +122,10 @@ class MockWorkspaceService implements IWorkspaceService {
     this.errorMessages.push(message);
   }
 
+  showInformationMessage(message: string): void {
+    // Mock implementation
+  }
+
   setWorkspaceRoot(root: string | undefined): void {
     this.workspaceRoot = root;
   }

@@ -2,7 +2,7 @@
   "name": "vsmemo",
   "displayName": "VsMemo",
   "description": "Comprehensive memo management system with cross-linking, backlink analysis, and interactive graph visualization for VS Code",
-  "version": "0.6.4",
+  "version": "0.8.1",
   "publisher": "yucchiy",
   "author": {
     "name": "yucchiy"
@@ -112,6 +112,12 @@
         "title": "Show Memo Graph",
         "category": "VsMemo",
         "icon": "$(graph)"
+      },
+      {
+        "command": "vsmemo.searchByTag",
+        "title": "Search Memos by Tag",
+        "category": "VsMemo",
+        "icon": "$(tag)"
       }
     ],
     "markdown.markdownItPlugins": true,
