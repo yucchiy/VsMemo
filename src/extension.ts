@@ -16,6 +16,7 @@ import { showOrphanedMemos } from './commands/showOrphanedMemos';
 import { showLinkStatistics } from './commands/showLinkStatistics';
 import { showGraph } from './commands/showGraph';
 import { searchByTag } from './commands/searchByTag';
+import { createMemoTypeCommand } from './commands/createSpecificMemoType';
 import { MemoTreeDataProvider } from './views/MemoTreeDataProvider';
 import { MemoInsightsView } from './views/BacklinkView';
 import { GraphView } from './views/GraphView';
@@ -73,6 +74,31 @@ export function activate(context: vscode.ExtensionContext) {
 
   // Initialize tag index
   tagIndexService.buildIndex().catch(console.error);
+
+  // Register dynamic commands for memo types
+  async function registerMemoTypeCommands() {
+    try {
+      const config = await configService.loadConfig();
+      const memoTypeDisposables: vscode.Disposable[] = [];
+
+      for (const memoType of config.memoTypes) {
+        const commandId = `vsmemo.create${memoType.id.charAt(0).toUpperCase() + memoType.id.slice(1)}`;
+        const disposable = vscode.commands.registerCommand(
+          commandId,
+          createMemoTypeCommand(memoType.name)
+        );
+        memoTypeDisposables.push(disposable);
+        logger.info(`Registered command: ${commandId} for memo type: ${memoType.name}`);
+      }
+
+      context.subscriptions.push(...memoTypeDisposables);
+    } catch (error) {
+      logger.error('Failed to register memo type commands:', error as Error);
+    }
+  }
+
+  // Register memo type commands
+  registerMemoTypeCommands();
 
   // Update tag index when files are saved
   vscode.workspace.onDidSaveTextDocument(async (document) => {
