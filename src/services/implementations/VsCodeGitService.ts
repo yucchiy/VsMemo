@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { IGitService, GitChange } from '../interfaces/IGitService';
+import { IGitService, GitChange, PullResult } from '../interfaces/IGitService';
 import { GitExtension, Repository } from '../../git';
 
 export class VsCodeGitService implements IGitService {
@@ -89,6 +89,31 @@ export class VsCodeGitService implements IGitService {
     }
 
     await this.repository.push();
+  }
+
+  async pull(): Promise<PullResult> {
+    if (!this.repository) {
+      throw new Error('Git repository not available');
+    }
+
+    try {
+      await this.repository.pull();
+      
+      // VS Code Git APIではpull結果の詳細情報が取得できないため、
+      // シンプルな成功/失敗のみを返す
+      const mergeChanges = this.repository.state.mergeChanges;
+      const hasConflicts = mergeChanges.length > 0;
+      
+      return {
+        success: !hasConflicts,
+        conflicts: hasConflicts ? mergeChanges.map(change => change.uri.fsPath) : undefined
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error.message || 'Pull failed'
+      };
+    }
   }
 
   getServiceName(): string {

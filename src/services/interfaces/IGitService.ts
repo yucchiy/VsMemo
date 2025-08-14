@@ -3,6 +3,15 @@ export interface GitChange {
   type: 'modified' | 'added' | 'deleted' | 'renamed' | 'untracked';
 }
 
+export interface PullResult {
+  success: boolean;
+  filesChanged?: number;
+  insertions?: number;
+  deletions?: number;
+  conflicts?: string[];
+  error?: string;
+}
+
 export interface IGitService {
   /**
    * Check if this Git service is available in the current environment
@@ -30,6 +39,12 @@ export interface IGitService {
    * Push commits to remote repository
    */
   push(): Promise<void>;
+
+  /**
+   * Pull changes from remote repository
+   * @returns Result of the pull operation
+   */
+  pull(): Promise<PullResult>;
 
   /**
    * Get the name/identifier of this Git service implementation

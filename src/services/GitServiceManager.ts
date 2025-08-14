@@ -1,4 +1,4 @@
-import { IGitService, GitChange } from './interfaces/IGitService';
+import { IGitService, GitChange, PullResult } from './interfaces/IGitService';
 import { VsCodeGitService } from './implementations/VsCodeGitService';
 import { CommandLineGitService } from './implementations/CommandLineGitService';
 
@@ -37,6 +37,11 @@ export class GitServiceManager implements IGitService {
   async push(): Promise<void> {
     const service = await this.getService();
     await service.push();
+  }
+
+  async pull(): Promise<PullResult> {
+    const service = await this.getService();
+    return await service.pull();
   }
 
   getServiceName(): string {

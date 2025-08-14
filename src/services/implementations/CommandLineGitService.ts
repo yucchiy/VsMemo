@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import simpleGit, { SimpleGit, StatusResult } from 'simple-git';
-import { IGitService, GitChange } from '../interfaces/IGitService';
+import { IGitService, GitChange, PullResult } from '../interfaces/IGitService';
 
 export class CommandLineGitService implements IGitService {
   private git?: SimpleGit;
@@ -105,6 +105,33 @@ export class CommandLineGitService implements IGitService {
     }
 
     await this.git.push();
+  }
+
+  async pull(): Promise<PullResult> {
+    if (!this.git) {
+      throw new Error('Git service not initialized');
+    }
+
+    try {
+      const result = await this.git.pull();
+      
+      // コンフリクトの検出
+      const status = await this.git.status();
+      const conflicts = status.conflicted;
+      
+      return {
+        success: conflicts.length === 0,
+        filesChanged: result.summary.changes,
+        insertions: result.summary.insertions,
+        deletions: result.summary.deletions,
+        conflicts: conflicts.length > 0 ? conflicts : undefined
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error.message || 'Pull failed'
+      };
+    }
   }
 
   getServiceName(): string {

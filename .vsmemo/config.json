@@ -1,0 +1,22 @@
+{
+  "memoTypes": [
+    {
+      "id": "daily",
+      "name": "Daily Note",
+      "templatePath": "templates/daily.md"
+    },
+    {
+      "id": "meeting",
+      "name": "Meeting Note",
+      "templatePath": "templates/meeting.md"
+    },
+    {
+      "id": "idea",
+      "name": "Idea Note",
+      "templatePath": "templates/idea.md"
+    }
+  ],
+  "baseDir": ".",
+  "fileExtensions": [".md", ".markdown"],
+  "defaultExtension": ".md"
+}
