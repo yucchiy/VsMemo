@@ -6,6 +6,8 @@ import { createMemo } from './commands/createMemo';
 import { listMemos } from './commands/listMemos';
 import { commitChanges } from './commands/commitChanges';
 import { createMemoFromType } from './commands/createMemoFromType';
+import { gitPull } from './commands/gitPull';
+import { gitSync } from './commands/gitSync';
 import { insertMemoLink } from './commands/insertMemoLink';
 import { openMemoFromPreview } from './commands/openMemoFromPreview';
 import { renameMemo } from './commands/renameMemo';
@@ -16,6 +18,7 @@ import { showOrphanedMemos } from './commands/showOrphanedMemos';
 import { showLinkStatistics } from './commands/showLinkStatistics';
 import { showGraph } from './commands/showGraph';
 import { searchByTag } from './commands/searchByTag';
+import { searchMemos } from './commands/searchMemos';
 import { createMemoTypeCommand } from './commands/createSpecificMemoType';
 import { MemoTreeDataProvider } from './views/MemoTreeDataProvider';
 import { MemoInsightsView } from './views/BacklinkView';
@@ -30,6 +33,7 @@ import { MetadataService } from './services/implementations/MetadataService';
 import { TagIndexService } from './services/implementations/TagIndexService';
 import { LoggerService } from './services/implementations/LoggerService';
 import { LogLevel } from './services/interfaces/ILoggerService';
+import { GitServiceManager } from './services/GitServiceManager';
 
 export function activate(context: vscode.ExtensionContext) {
   // Initialize logging service
@@ -40,6 +44,7 @@ export function activate(context: vscode.ExtensionContext) {
   const fileService = new VsCodeFileService();
   const configService = new VsCodeConfigService(fileService);
   const metadataService = new MetadataService();
+  const gitManager = new GitServiceManager();
 
   // Get workspace root
   const workspaceFolders = vscode.workspace.workspaceFolders;
@@ -149,6 +154,9 @@ export function activate(context: vscode.ExtensionContext) {
   const showLinkStatisticsDisposable = vscode.commands.registerCommand('vsmemo.showLinkStatistics', () => showLinkStatistics(memoInsightsView));
   const showGraphDisposable = vscode.commands.registerCommand('vsmemo.showGraph', () => showGraph(graphView));
   const searchByTagDisposable = vscode.commands.registerCommand('vsmemo.searchByTag', (tag?: string) => searchByTag(tag));
+  const searchMemosDisposable = vscode.commands.registerCommand('vsmemo.searchMemos', searchMemos);
+  const gitPullDisposable = vscode.commands.registerCommand('vsmemo.git.pull', () => gitPull(gitManager));
+  const gitSyncDisposable = vscode.commands.registerCommand('vsmemo.git.sync', () => gitSync(gitManager));
 
   context.subscriptions.push(
     createMemoDisposable,
@@ -166,6 +174,9 @@ export function activate(context: vscode.ExtensionContext) {
     showLinkStatisticsDisposable,
     showGraphDisposable,
     searchByTagDisposable,
+    searchMemosDisposable,
+    gitPullDisposable,
+    gitSyncDisposable,
     treeView,
     memoInsightsTreeView,
     definitionProvider,
