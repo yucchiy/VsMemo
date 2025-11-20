@@ -4,6 +4,7 @@ import { IConfigService } from '../services/interfaces/IConfigService';
 import { IFileService } from '../services/interfaces/IFileService';
 import { IMetadataService } from '../services/interfaces/IMetadataService';
 import { MemoMetadata } from '../models/MemoMetadata';
+import { resolveRelativePath } from '../utils/pathUtils';
 
 export class MemoLinkProvider implements vscode.DefinitionProvider {
   constructor(
@@ -22,24 +23,24 @@ export class MemoLinkProvider implements vscode.DefinitionProvider {
     }
 
     const workspaceRoot = workspaceFolders[0].uri.fsPath;
+    const currentFilePath = document.uri.fsPath;
 
-    // Get the word/line at the current position
-    const wordRange = document.getWordRangeAtPosition(position, /\[.*?\]\(vsmemo:\/\/.*?\)/);
+    // Get the word/line at the current position - match markdown links to .md/.markdown files (exclude http/https)
+    const wordRange = document.getWordRangeAtPosition(position, /\[.*?\]\((?!https?:\/\/)[^)]+\.(?:md|markdown)\)/);
     if (!wordRange) {
       return undefined;
     }
 
     const linkText = document.getText(wordRange);
-    const memoUri = this.extractMemoUri(linkText);
-    if (!memoUri) {
+    const relativePath = this.extractRelativePath(linkText);
+    if (!relativePath) {
       return undefined;
     }
 
     try {
-      const config = await this.configService.loadConfig();
-      const targetPath = await this.resolveMemoPath(memoUri, workspaceRoot, config.baseDir);
+      const targetPath = resolveRelativePath(currentFilePath, relativePath);
 
-      if (targetPath && await this.fileService.exists(targetPath)) {
+      if (await this.fileService.exists(targetPath)) {
         return new vscode.Location(
           vscode.Uri.file(targetPath),
           new vscode.Position(0, 0)
@@ -53,33 +54,13 @@ export class MemoLinkProvider implements vscode.DefinitionProvider {
   }
 
   /**
-   * Extract memo URI from markdown link
-   * Input: [メモのリンク](vsmemo://memo/2025/テストメモタイトル.markdown)
-   * Output: memo/2025/テストメモタイトル.markdown
+   * Extract relative path from markdown link
+   * Input: [メモのリンク](./memo/2025/テストメモタイトル.md)
+   * Output: ./memo/2025/テストメモタイトル.md
    */
-  private extractMemoUri(linkText: string): string | undefined {
-    const match = linkText.match(/\[.*?\]\(vsmemo:\/\/(.*?)\)/);
+  private extractRelativePath(linkText: string): string | undefined {
+    const match = linkText.match(/\[.*?\]\(([^)]+\.(?:md|markdown))\)/);
     return match ? match[1] : undefined;
-  }
-
-  /**
-   * Resolve memo URI to absolute file path
-   */
-  private async resolveMemoPath(memoUri: string, workspaceRoot: string, baseDir: string): Promise<string | undefined> {
-    try {
-      // Decode each path component individually to preserve forward slashes
-      const pathParts = memoUri.split('/');
-      const decodedParts = pathParts.map(part => decodeURIComponent(part));
-      const decodedUri = decodedParts.join('/');
-
-      // Construct the full path: workspaceRoot/baseDir/memoUri
-      const fullPath = path.join(workspaceRoot, baseDir, decodedUri);
-
-      return fullPath;
-    } catch (error) {
-      console.warn('Error resolving memo path:', error);
-      return undefined;
-    }
   }
 }
 
@@ -104,30 +85,30 @@ export class MemoLinkHoverProvider implements vscode.HoverProvider {
     }
 
     const workspaceRoot = workspaceFolders[0].uri.fsPath;
+    const currentFilePath = document.uri.fsPath;
 
-    // Get the word/line at the current position
-    const wordRange = document.getWordRangeAtPosition(position, /\[.*?\]\(vsmemo:\/\/.*?\)/);
+    // Get the word/line at the current position - match markdown links to .md/.markdown files (exclude http/https)
+    const wordRange = document.getWordRangeAtPosition(position, /\[.*?\]\((?!https?:\/\/)[^)]+\.(?:md|markdown)\)/);
     if (!wordRange) {
       return undefined;
     }
 
     const linkText = document.getText(wordRange);
-    const memoUri = this.extractMemoUri(linkText);
-    if (!memoUri) {
+    const relativePath = this.extractRelativePath(linkText);
+    if (!relativePath) {
       return undefined;
     }
 
     try {
-      const config = await this.configService.loadConfig();
-      const targetPath = await this.resolveMemoPath(memoUri, workspaceRoot, config.baseDir);
+      const targetPath = resolveRelativePath(currentFilePath, relativePath);
 
       if (targetPath) {
         const exists = await this.fileService.exists(targetPath);
-        const relativePath = path.relative(workspaceRoot, targetPath);
+        const displayPath = path.relative(workspaceRoot, targetPath);
 
         const hoverText = new vscode.MarkdownString();
         hoverText.appendMarkdown(`**VsMemo Link**\n\n`);
-        hoverText.appendMarkdown(`📄 \`${relativePath}\`\n\n`);
+        hoverText.appendMarkdown(`📄 \`${displayPath}\`\n\n`);
 
         if (exists) {
           hoverText.appendMarkdown(`✅ File exists - Click to open\n\n`);
@@ -185,24 +166,9 @@ export class MemoLinkHoverProvider implements vscode.HoverProvider {
     return undefined;
   }
 
-  private extractMemoUri(linkText: string): string | undefined {
-    const match = linkText.match(/\[.*?\]\(vsmemo:\/\/(.*?)\)/);
+  private extractRelativePath(linkText: string): string | undefined {
+    const match = linkText.match(/\[.*?\]\(([^)]+\.(?:md|markdown))\)/);
     return match ? match[1] : undefined;
-  }
-
-  private async resolveMemoPath(memoUri: string, workspaceRoot: string, baseDir: string): Promise<string | undefined> {
-    try {
-      // Decode each path component individually to preserve forward slashes
-      const pathParts = memoUri.split('/');
-      const decodedParts = pathParts.map(part => decodeURIComponent(part));
-      const decodedUri = decodedParts.join('/');
-
-      const fullPath = path.join(workspaceRoot, baseDir, decodedUri);
-      return fullPath;
-    } catch (error) {
-      console.warn('Error resolving memo path:', error);
-      return undefined;
-    }
   }
 
   /**

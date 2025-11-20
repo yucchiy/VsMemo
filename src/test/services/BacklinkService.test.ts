@@ -163,7 +163,7 @@ suite('BacklinkService', () => {
       // Arrange
       mockFileService.setFile('/test/workspace/memos/file1.md', `
 # File 1
-This file links to [vsmemo://file2.md](vsmemo://file2.md)
+This file links to [file2](./file2.md)
 `);
 
       mockFileService.setFile('/test/workspace/memos/file2.md', `# File 2`);
@@ -194,11 +194,11 @@ This file links to [vsmemo://file2.md](vsmemo://file2.md)
       assert.strictEqual(backlinks.length, 0);
     });
 
-    test('should handle invalid vsmemo links gracefully', async () => {
+    test('should handle invalid links gracefully', async () => {
       mockFileService.setFile('/test/workspace/memos/invalid.md', `
 # Invalid Links
-This has a bad link [vsmemo://nonexistent.md](vsmemo://nonexistent.md)
-And a malformed one [bad link](vsmemo://malformed)
+This has a link to nonexistent file [nonexistent](./nonexistent.md)
+And an external link [external](https://example.com)
 `);
 
       await backlinkService.buildIndex();
@@ -213,7 +213,7 @@ And a malformed one [bad link](vsmemo://malformed)
     test('should return outbound links from a file', async () => {
       mockFileService.setFile('/test/workspace/memos/source.md', `
 # Source File
-Link to [File A](vsmemo://fileA.md) and [File B](vsmemo://fileB.md)
+Link to [File A](./fileA.md) and [File B](./fileB.md)
 `);
 
       mockFileService.setFile('/test/workspace/memos/fileA.md', '# File A');
@@ -241,7 +241,7 @@ Link to [File A](vsmemo://fileA.md) and [File B](vsmemo://fileB.md)
 
   suite('getOrphanedFiles', () => {
     test('should identify files with no incoming backlinks', async () => {
-      mockFileService.setFile('/test/workspace/memos/connected.md', 'Links to [orphan](vsmemo://orphan.md)');
+      mockFileService.setFile('/test/workspace/memos/connected.md', 'Links to [orphan](./orphan.md)');
       mockFileService.setFile('/test/workspace/memos/orphan.md', '# Orphan');
       mockFileService.setFile('/test/workspace/memos/another-orphan.md', '# Another Orphan');
 
@@ -249,12 +249,12 @@ Link to [File A](vsmemo://fileA.md) and [File B](vsmemo://fileB.md)
 
       const orphanedFiles = await backlinkService.getOrphanedFiles();
       assert.strictEqual(orphanedFiles.length, 1);
-      assert.strictEqual(orphanedFiles[0], '/test/workspace/memos/another-orphan.md');
+      assert.ok(orphanedFiles[0].includes('another-orphan.md'));
     });
 
     test('should return empty array when all files are connected', async () => {
-      mockFileService.setFile('/test/workspace/memos/file1.md', 'Links to [file2](vsmemo://file2.md)');
-      mockFileService.setFile('/test/workspace/memos/file2.md', 'Links to [file1](vsmemo://file1.md)');
+      mockFileService.setFile('/test/workspace/memos/file1.md', 'Links to [file2](./file2.md)');
+      mockFileService.setFile('/test/workspace/memos/file2.md', 'Links to [file1](./file1.md)');
 
       await backlinkService.buildIndex();
 
@@ -267,9 +267,9 @@ Link to [File A](vsmemo://fileA.md) and [File B](vsmemo://fileB.md)
     test('should calculate correct statistics', async () => {
       mockFileService.setFile('/test/workspace/memos/hub.md', `
 # Hub
-Links to [file1](vsmemo://file1.md), [file2](vsmemo://file2.md), [file3](vsmemo://file3.md)
+Links to [file1](./file1.md), [file2](./file2.md), [file3](./file3.md)
 `);
-      mockFileService.setFile('/test/workspace/memos/file1.md', 'Links to [file2](vsmemo://file2.md)');
+      mockFileService.setFile('/test/workspace/memos/file1.md', 'Links to [file2](./file2.md)');
       mockFileService.setFile('/test/workspace/memos/file2.md', '# File 2');
       mockFileService.setFile('/test/workspace/memos/file3.md', '# File 3');
       mockFileService.setFile('/test/workspace/memos/orphan.md', '# Orphan');

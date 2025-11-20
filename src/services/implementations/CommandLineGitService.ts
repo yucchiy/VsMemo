@@ -114,11 +114,11 @@ export class CommandLineGitService implements IGitService {
 
     try {
       const result = await this.git.pull();
-      
+
       // コンフリクトの検出
       const status = await this.git.status();
       const conflicts = status.conflicted;
-      
+
       return {
         success: conflicts.length === 0,
         filesChanged: result.summary.changes,

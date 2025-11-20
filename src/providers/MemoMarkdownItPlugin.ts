@@ -1,5 +1,3 @@
-import * as vscode from 'vscode';
-import * as path from 'path';
 
 export class MemoMarkdownPreviewProvider {
   constructor() {}
@@ -21,28 +19,15 @@ export class MemoMarkdownPreviewProvider {
       if (hrefIndex >= 0) {
         const href = token.attrs[hrefIndex][1];
 
-        if (href.startsWith('vsmemo://')) {
-          const workspaceFolders = vscode.workspace.workspaceFolders;
-          if (workspaceFolders && workspaceFolders.length > 0) {
-            try {
-              const memoUri = href.replace('vsmemo://', '');
-
-              // Decode each path component individually to preserve forward slashes
-              const pathParts = memoUri.split('/');
-              const decodedParts = pathParts.map((part: string) => decodeURIComponent(part));
-              const decodedUri = decodedParts.join('/');
-
-              // Create a command URI that will be handled by our extension
-              const commandUri = `command:vsmemo.openMemoFromPreview?${encodeURIComponent(JSON.stringify({ memoUri: decodedUri }))}`;
-              token.attrs[hrefIndex][1] = commandUri;
-
-              // Add styling and tooltip
-              token.attrSet('class', 'vsmemo-link');
-              token.attrSet('title', `Open memo: ${decodedUri}`);
-              token.attrSet('style', 'color: #0066cc; text-decoration: underline;');
-            } catch (error) {
-              console.warn('Error processing vsmemo link in preview:', error);
-            }
+        // Check if this is a relative path link to a .md/.markdown file (not http/https)
+        if ((href.endsWith('.md') || href.endsWith('.markdown')) && !href.startsWith('http://') && !href.startsWith('https://')) {
+          try {
+            // Add styling and tooltip for memo links
+            token.attrSet('class', 'vsmemo-link');
+            token.attrSet('title', `Open memo: ${href}`);
+            token.attrSet('style', 'color: #0066cc; text-decoration: underline;');
+          } catch (error) {
+            console.warn('Error processing memo link in preview:', error);
           }
         }
       }

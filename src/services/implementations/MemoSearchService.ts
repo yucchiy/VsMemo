@@ -27,7 +27,7 @@ export class MemoSearchService implements IMemoSearchService {
     for (const memo of this.searchIndex.values()) {
       const lowerTitle = memo.title.toLowerCase();
       const lowerFilePath = memo.filePath.toLowerCase();
-      
+
       // タイトルまたはファイルパスに検索キーワードが含まれているか確認
       if (lowerTitle.includes(lowerQuery) || lowerFilePath.includes(lowerQuery)) {
         results.push(memo);
@@ -55,11 +55,11 @@ export class MemoSearchService implements IMemoSearchService {
 
   async buildIndex(): Promise<void> {
     this.searchIndex.clear();
-    
+
     const config = await this.configService.loadConfig();
-    
+
     for (const memoType of config.memoTypes) {
-      const memoDir = memoType.baseDir 
+      const memoDir = memoType.baseDir
         ? path.join(this.workspaceRoot, memoType.baseDir)
         : this.workspaceRoot;
 
@@ -69,7 +69,7 @@ export class MemoSearchService implements IMemoSearchService {
 
       try {
         const files = await this.fileService.listFiles(memoDir, ['.md']);
-        
+
         for (const file of files) {
           const filePath = path.join(memoDir, file);
           await this.indexFile(filePath, memoType.name);
@@ -84,12 +84,12 @@ export class MemoSearchService implements IMemoSearchService {
     try {
       const content = await this.fileService.readFile(filePath);
       const metadata = this.metadataService.extractMetadata(content);
-      
+
       const title = metadata?.special?.title || path.basename(filePath, '.md');
       const tags = metadata?.special?.tags || [];
-      
+
       const stats = await this.fileService.getStats(filePath);
-      
+
       this.searchIndex.set(filePath, {
         filePath,
         title,
@@ -106,7 +106,7 @@ export class MemoSearchService implements IMemoSearchService {
     const lowerContent = content.toLowerCase();
     const lowerQuery = query.toLowerCase();
     const index = lowerContent.indexOf(lowerQuery);
-    
+
     if (index === -1) {
       return '';
     }
@@ -114,9 +114,9 @@ export class MemoSearchService implements IMemoSearchService {
     const excerptLength = 100;
     const start = Math.max(0, index - excerptLength / 2);
     const end = Math.min(content.length, index + query.length + excerptLength / 2);
-    
+
     let excerpt = content.substring(start, end);
-    
+
     // 前後に省略記号を追加
     if (start > 0) {
       excerpt = '...' + excerpt;
@@ -124,7 +124,7 @@ export class MemoSearchService implements IMemoSearchService {
     if (end < content.length) {
       excerpt = excerpt + '...';
     }
-    
+
     return excerpt.trim();
   }
 
@@ -134,9 +134,9 @@ export class MemoSearchService implements IMemoSearchService {
   async updateFile(filePath: string): Promise<void> {
     // ファイルがどのメモタイプに属するか判定
     const config = await this.configService.loadConfig();
-    
+
     for (const memoType of config.memoTypes) {
-      const memoDir = memoType.baseDir 
+      const memoDir = memoType.baseDir
         ? path.join(this.workspaceRoot, memoType.baseDir)
         : this.workspaceRoot;
 

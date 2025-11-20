@@ -4,6 +4,7 @@ import { IFileService } from '../interfaces/IFileService';
 import { IConfigService } from '../interfaces/IConfigService';
 import { IBacklinkService } from '../interfaces/IBacklinkService';
 import { isValidMemoFile } from '../../utils/fileUtils';
+import { calculateRelativePath, resolveRelativePath } from '../../utils/pathUtils';
 
 export class LinkUpdateService implements ILinkUpdateService {
   constructor(
@@ -28,17 +29,10 @@ export class LinkUpdateService implements ILinkUpdateService {
         return result;
       }
 
-      // Calculate relative paths for the link update
-      const config = await this.configService.loadConfig();
-      const baseDir = path.join(this.workspaceRoot, config.baseDir);
-
-      const oldRelativePath = path.relative(baseDir, oldPath);
-      const newRelativePath = path.relative(baseDir, newPath);
-
-      // Update each file
+      // Update each file with new relative paths
       for (const filePath of filesWithLinks) {
         try {
-          const updated = await this.updateLinksInFile(filePath, oldRelativePath, newRelativePath);
+          const updated = await this.updateLinksInFile(filePath, oldPath, newPath);
           if (updated.linksUpdated > 0) {
             result.filesUpdated++;
             result.linksUpdated += updated.linksUpdated;
@@ -68,13 +62,13 @@ export class LinkUpdateService implements ILinkUpdateService {
       // Method 1: Use backlink service to find files that reference the target
       const backlinks = await this.backlinkService.getBacklinks(targetPath);
       const sourceFiles = Array.from(new Set(backlinks.map(backlink => backlink.sourceFile)));
-      
+
       // Method 2: If no backlinks found, try direct file search as fallback
       if (sourceFiles.length === 0) {
         const directSearchFiles = await this.findFilesWithLinksDirectly(targetPath);
         return directSearchFiles;
       }
-      
+
       return sourceFiles;
     } catch (error) {
       console.error('Error finding files with links:', error);
@@ -84,30 +78,28 @@ export class LinkUpdateService implements ILinkUpdateService {
 
   private async findFilesWithLinksDirectly(targetPath: string): Promise<string[]> {
     try {
-      const config = await this.configService.loadConfig();
-      const baseDir = path.join(this.workspaceRoot, config.baseDir);
-      const targetRelativePath = path.relative(baseDir, targetPath);
-      
       // Get all memo files
       const allFiles = await this.getAllMemoFiles();
       const filesWithLinks: string[] = [];
-      
+
       for (const filePath of allFiles) {
-        if (filePath === targetPath) continue; // Skip the target file itself
-        
+        if (filePath === targetPath) {continue;} // Skip the target file itself
+
         try {
           const content = await this.fileService.readFile(filePath);
-          
-          // Check for vsmemo:// links to the target
-          const vsmemoLinkPattern = /\[([^\]]*)\]\(vsmemo:\/\/([^)]+)\)/g;
+
+          // Check for relative path links to .md/.markdown files
+          const linkPattern = /\[([^\]]*)\]\((?!https?:\/\/)([^)]+\.(?:md|markdown))\)/g;
           let match;
-          
-          while ((match = vsmemoLinkPattern.exec(content)) !== null) {
-            const linkPath = decodeURIComponent(match[2]);
-            const normalizedLinkPath = linkPath.replace(/\\/g, '/');
-            const normalizedTargetPath = targetRelativePath.replace(/\\/g, '/');
-            
-            if (normalizedLinkPath === normalizedTargetPath) {
+
+          while ((match = linkPattern.exec(content)) !== null) {
+            const relativeLinkPath = match[2];
+            // Resolve the relative path from the source file to get absolute path
+            const resolvedPath = resolveRelativePath(filePath, relativeLinkPath);
+            const normalizedResolved = path.normalize(resolvedPath).toLowerCase();
+            const normalizedTarget = path.normalize(targetPath).toLowerCase();
+
+            if (normalizedResolved === normalizedTarget) {
               filesWithLinks.push(filePath);
               break; // Found a link in this file, no need to continue searching this file
             }
@@ -116,7 +108,7 @@ export class LinkUpdateService implements ILinkUpdateService {
           console.error(`Error reading file ${filePath}:`, error);
         }
       }
-      
+
       return filesWithLinks;
     } catch (error) {
       console.error('Error in direct file search:', error);
@@ -128,7 +120,7 @@ export class LinkUpdateService implements ILinkUpdateService {
     try {
       const config = await this.configService.loadConfig();
       const baseDir = path.join(this.workspaceRoot, config.baseDir);
-      
+
       // Simple recursive file search
       const files: string[] = [];
       await this.searchMemoFilesRecursively(baseDir, files);
@@ -142,11 +134,11 @@ export class LinkUpdateService implements ILinkUpdateService {
   private async searchMemoFilesRecursively(dir: string, files: string[]): Promise<void> {
     try {
       const entries = await this.fileService.readDirectory(dir);
-      
+
       for (const entry of entries) {
         const fullPath = path.join(dir, entry);
         const stat = await this.fileService.getStats(fullPath);
-        
+
         if (stat.isDirectory) {
           await this.searchMemoFilesRecursively(fullPath, files);
         } else if (isValidMemoFile(fullPath, ['.md', '.markdown'])) {
@@ -160,34 +152,28 @@ export class LinkUpdateService implements ILinkUpdateService {
 
   private async updateLinksInFile(
     filePath: string,
-    oldRelativePath: string,
-    newRelativePath: string
+    oldTargetPath: string,
+    newTargetPath: string
   ): Promise<{ linksUpdated: number }> {
     const content = await this.fileService.readFile(filePath);
     let updatedContent = content;
     let linksUpdated = 0;
 
-    // Create encoded versions for URL matching
-    const oldEncodedPath = this.encodeVsmemoPath(oldRelativePath);
-    const newEncodedPath = this.encodeVsmemoPath(newRelativePath);
+    // Calculate the new relative path from this file to the new target
+    const newRelativePath = calculateRelativePath(filePath, newTargetPath);
 
-    // Normalize paths for comparison (handle both forward and backward slashes)
-    const normalizePathForComparison = (p: string) => p.replace(/\\/g, '/');
-    const normalizedOldPath = normalizePathForComparison(oldRelativePath);
-    const normalizedOldEncodedPath = normalizePathForComparison(oldEncodedPath);
+    // Pattern to match relative path links to .md/.markdown files
+    const linkPattern = /\[([^\]]*)\]\((?!https?:\/\/)([^)]+\.(?:md|markdown))\)/g;
 
-    // Pattern to match vsmemo:// links
-    const vsmemoLinkPattern = /\[([^\]]*)\]\(vsmemo:\/\/([^)]+)\)/g;
+    updatedContent = updatedContent.replace(linkPattern, (match, linkText, relativeLinkPath) => {
+      // Resolve the relative path to get absolute path
+      const resolvedPath = resolveRelativePath(filePath, relativeLinkPath);
+      const normalizedResolved = path.normalize(resolvedPath).toLowerCase();
+      const normalizedOldTarget = path.normalize(oldTargetPath).toLowerCase();
 
-    updatedContent = updatedContent.replace(vsmemoLinkPattern, (match, linkText, linkPath) => {
-      // Decode the link path for comparison
-      const decodedLinkPath = decodeURIComponent(linkPath);
-      const normalizedDecodedPath = normalizePathForComparison(decodedLinkPath);
-      const normalizedLinkPath = normalizePathForComparison(linkPath);
-
-      if (normalizedDecodedPath === normalizedOldPath || normalizedLinkPath === normalizedOldEncodedPath) {
+      if (normalizedResolved === normalizedOldTarget) {
         linksUpdated++;
-        return `[${linkText}](vsmemo://${newEncodedPath})`;
+        return `[${linkText}](${newRelativePath})`;
       }
 
       return match;
@@ -195,13 +181,14 @@ export class LinkUpdateService implements ILinkUpdateService {
 
     // Also handle cases where the link text might need updating if it was derived from filename
     if (linksUpdated > 0) {
-      const oldFileName = path.basename(oldRelativePath, path.extname(oldRelativePath));
-      const newFileName = path.basename(newRelativePath, path.extname(newRelativePath));
+      const oldFileName = path.basename(oldTargetPath, path.extname(oldTargetPath));
+      const newFileName = path.basename(newTargetPath, path.extname(newTargetPath));
 
       if (oldFileName !== newFileName) {
         // Update link text that matches the old filename
-        const linkTextPattern = new RegExp(`\\[${this.escapeRegExp(oldFileName)}\\]\\(vsmemo:\\/\\/${this.escapeRegExp(newEncodedPath)}\\)`, 'g');
-        updatedContent = updatedContent.replace(linkTextPattern, `[${newFileName}](vsmemo://${newEncodedPath})`);
+        const escapedNewPath = this.escapeRegExp(newRelativePath);
+        const linkTextPattern = new RegExp(`\\[${this.escapeRegExp(oldFileName)}\\]\\(${escapedNewPath}\\)`, 'g');
+        updatedContent = updatedContent.replace(linkTextPattern, `[${newFileName}](${newRelativePath})`);
       }
     }
 
@@ -210,13 +197,6 @@ export class LinkUpdateService implements ILinkUpdateService {
     }
 
     return { linksUpdated };
-  }
-
-  private encodeVsmemoPath(relativePath: string): string {
-    // Encode only the path components to preserve forward slashes
-    const pathParts = relativePath.split('/');
-    const encodedParts = pathParts.map(part => encodeURIComponent(part));
-    return encodedParts.join('/');
   }
 
   private escapeRegExp(string: string): string {

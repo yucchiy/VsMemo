@@ -3,6 +3,7 @@ import * as path from 'path';
 import { IConfigService } from '../services/interfaces/IConfigService';
 import { IFileService } from '../services/interfaces/IFileService';
 import { isValidMemoFile, extractFileNameWithoutExtension } from '../utils/fileUtils';
+import { calculateRelativePath } from '../utils/pathUtils';
 
 export class MemoLinkCompletionProvider implements vscode.CompletionItemProvider {
   constructor(
@@ -19,13 +20,14 @@ export class MemoLinkCompletionProvider implements vscode.CompletionItemProvider
     const lineText = document.lineAt(position.line).text;
     const textBeforeCursor = lineText.substring(0, position.character);
 
-    // Check if we're inside a vsmemo:// link
-    const vsmemoMatch = textBeforeCursor.match(/\[.*?\]\(vsmemo:\/\/([^)]*?)$/);
-    if (!vsmemoMatch) {
+    // Check if we're inside a markdown link (triggered after `](`)
+    const linkMatch = textBeforeCursor.match(/\[.*?\]\(([^)]*?)$/);
+    if (!linkMatch) {
       return [];
     }
 
-    const partialPath = vsmemoMatch[1];
+    const partialPath = linkMatch[1];
+    const currentFilePath = document.uri.fsPath;
 
     try {
       const workspaceFolders = vscode.workspace.workspaceFolders;
@@ -45,19 +47,17 @@ export class MemoLinkCompletionProvider implements vscode.CompletionItemProvider
       const completionItems: vscode.CompletionItem[] = [];
 
       for (const memo of memoFiles) {
+        // Calculate relative path from current file to memo
+        const relativePathFromCurrent = calculateRelativePath(currentFilePath, memo.fullPath);
+
         // Check if this memo matches the partial path
-        if (partialPath === '' || memo.relativePath.toLowerCase().includes(partialPath.toLowerCase()) ||
+        if (partialPath === '' || relativePathFromCurrent.toLowerCase().includes(partialPath.toLowerCase()) ||
             memo.title.toLowerCase().includes(partialPath.toLowerCase())) {
 
           const completionItem = new vscode.CompletionItem(memo.title, vscode.CompletionItemKind.File);
 
-          // Encode the path properly
-          const pathParts = memo.relativePath.split('/');
-          const encodedParts = pathParts.map(part => encodeURIComponent(part));
-          const encodedPath = encodedParts.join('/');
-
-          completionItem.insertText = encodedPath;
-          completionItem.detail = memo.relativePath;
+          completionItem.insertText = relativePathFromCurrent;
+          completionItem.detail = relativePathFromCurrent;
           completionItem.documentation = new vscode.MarkdownString(`📄 ${memo.relativePath}\n\nClick to insert memo link`);
 
           // Set the range to replace the partial path

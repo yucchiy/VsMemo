@@ -17,7 +17,7 @@ export async function gitPull(gitService: IGitService): Promise<void> {
       progress.report({ increment: 0 });
 
       const result = await gitService.pull();
-      
+
       if (result.success) {
         let message = 'Pull completed successfully';
         if (result.filesChanged && result.filesChanged > 0) {
@@ -30,7 +30,7 @@ export async function gitPull(gitService: IGitService): Promise<void> {
           conflictMessage,
           'Show Conflicts'
         );
-        
+
         if (action === 'Show Conflicts') {
           // VS Codeのソース管理ビューを開く
           await vscode.commands.executeCommand('workbench.view.scm');

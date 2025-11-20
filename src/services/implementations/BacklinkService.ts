@@ -4,6 +4,7 @@ import { IFileService } from '../interfaces/IFileService';
 import { IConfigService } from '../interfaces/IConfigService';
 import { ILoggerService } from '../interfaces/ILoggerService';
 import { isValidMemoFile } from '../../utils/fileUtils';
+import { resolveRelativePath, normalizePath as normalizePathUtil } from '../../utils/pathUtils';
 
 export class BacklinkService implements IBacklinkService {
   private backlinkIndex: BacklinkIndex = {};
@@ -137,15 +138,16 @@ export class BacklinkService implements IBacklinkService {
       const content = await this.fileService.readFile(sourceFilePath);
       const lines = content.split('\n');
 
-      const linkRegex = /\[([^\]]*)\]\(vsmemo:\/\/([^)]+)\)/g;
+      // Match markdown links to .md/.markdown files (exclude http/https URLs)
+      const linkRegex = /\[([^\]]*)\]\((?!https?:\/\/)([^)]+\.(?:md|markdown))\)/g;
 
       lines.forEach((line, lineIndex) => {
         let match;
         while ((match = linkRegex.exec(line)) !== null) {
           const linkText = match[1];
-          const memoUri = match[2];
+          const relativeLinkPath = match[2];
 
-          const targetPath = this.resolveMemoPath(memoUri);
+          const targetPath = resolveRelativePath(sourceFilePath, relativeLinkPath);
           if (targetPath) {
             const context = this.getContext(lines, lineIndex);
 
@@ -193,17 +195,17 @@ export class BacklinkService implements IBacklinkService {
       const content = await this.fileService.readFile(filePath);
       const lines = content.split('\n');
 
-      // Regular expression to match vsmemo:// links
-      const linkRegex = /\[([^\]]*)\]\(vsmemo:\/\/([^)]+)\)/g;
+      // Match markdown links to .md/.markdown files (exclude http/https URLs)
+      const linkRegex = /\[([^\]]*)\]\((?!https?:\/\/)([^)]+\.(?:md|markdown))\)/g;
 
       lines.forEach((line, lineIndex) => {
         let match;
         while ((match = linkRegex.exec(line)) !== null) {
           const linkText = match[1];
-          const memoUri = match[2];
+          const relativeLinkPath = match[2];
 
-          // Decode the URI and resolve to absolute path
-          const targetPath = this.resolveMemoPath(memoUri);
+          // Resolve relative path to absolute path
+          const targetPath = resolveRelativePath(filePath, relativeLinkPath);
           if (targetPath) {
             const normalizedTarget = this.normalizePath(targetPath);
 
@@ -262,21 +264,6 @@ export class BacklinkService implements IBacklinkService {
       }
     } catch (error) {
       console.warn(`Failed to collect files from ${dir}:`, error);
-    }
-  }
-
-  private resolveMemoPath(memoUri: string): string | null {
-    try {
-      // Decode each path component individually to preserve forward slashes
-      const pathParts = memoUri.split('/');
-      const decodedParts = pathParts.map(part => decodeURIComponent(part));
-      const decodedUri = decodedParts.join('/');
-
-      // Construct the full path
-      return path.join(this.workspaceRoot, this.baseDir, decodedUri);
-    } catch (error) {
-      console.warn('Error resolving memo path:', error);
-      return null;
     }
   }
 

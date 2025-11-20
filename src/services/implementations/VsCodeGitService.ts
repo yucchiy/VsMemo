@@ -98,12 +98,12 @@ export class VsCodeGitService implements IGitService {
 
     try {
       await this.repository.pull();
-      
+
       // VS Code Git APIではpull結果の詳細情報が取得できないため、
       // シンプルな成功/失敗のみを返す
       const mergeChanges = this.repository.state.mergeChanges;
       const hasConflicts = mergeChanges.length > 0;
-      
+
       return {
         success: !hasConflicts,
         conflicts: hasConflicts ? mergeChanges.map(change => change.uri.fsPath) : undefined

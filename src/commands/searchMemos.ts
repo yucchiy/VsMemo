@@ -49,7 +49,7 @@ export async function searchMemos(): Promise<void> {
       const relativePath = path.relative(workspaceRoot, result.filePath);
       const tagsStr = result.tags && result.tags.length > 0 ? ` | Tags: ${result.tags.join(', ')}` : '';
       const excerptStr = result.excerpt ? `\n${result.excerpt}` : '';
-      
+
       return {
         label: result.title,
         description: `[${result.memoType}] ${relativePath}`,

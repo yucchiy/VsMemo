@@ -3,6 +3,7 @@ import * as path from 'path';
 import { VsCodeConfigService } from '../services/implementations/VsCodeConfigService';
 import { VsCodeFileService } from '../services/implementations/VsCodeFileService';
 import { isValidMemoFile, extractFileNameWithoutExtension } from '../utils/fileUtils';
+import { calculateRelativePath } from '../utils/pathUtils';
 
 export async function insertMemoLink(): Promise<void> {
   try {
@@ -51,8 +52,9 @@ export async function insertMemoLink(): Promise<void> {
         return;
       }
 
-      // Generate memo link
-      const linkText = generateMemoLink(selectedItem.memo.title, selectedItem.memo.relativePath);
+      // Generate memo link with relative path from current file
+      const currentFilePath = activeEditor.document.uri.fsPath;
+      const linkText = generateMemoLink(selectedItem.memo.title, currentFilePath, selectedItem.memo.fullPath);
 
       // Insert link at cursor position
       const position = activeEditor.selection.active;
@@ -136,10 +138,7 @@ function extractTitleFromContent(content: string, fileName: string, fileExtensio
   return extractFileNameWithoutExtension(fileName, fileExtensions);
 }
 
-function generateMemoLink(title: string, relativePath: string): string {
-  // Encode only the path components to preserve forward slashes
-  const pathParts = relativePath.split('/');
-  const encodedParts = pathParts.map(part => encodeURIComponent(part));
-  const encodedPath = encodedParts.join('/');
-  return `[${title}](vsmemo://${encodedPath})`;
+function generateMemoLink(title: string, fromFile: string, toFile: string): string {
+  const relativePath = calculateRelativePath(fromFile, toFile);
+  return `[${title}](${relativePath})`;
 }

@@ -19,6 +19,7 @@ import { showLinkStatistics } from './commands/showLinkStatistics';
 import { showGraph } from './commands/showGraph';
 import { searchByTag } from './commands/searchByTag';
 import { searchMemos } from './commands/searchMemos';
+import { migrateLinks } from './commands/migrateLinks';
 import { createMemoTypeCommand } from './commands/createSpecificMemoType';
 import { MemoTreeDataProvider } from './views/MemoTreeDataProvider';
 import { MemoInsightsView } from './views/BacklinkView';
@@ -155,6 +156,7 @@ export function activate(context: vscode.ExtensionContext) {
   const showGraphDisposable = vscode.commands.registerCommand('vsmemo.showGraph', () => showGraph(graphView));
   const searchByTagDisposable = vscode.commands.registerCommand('vsmemo.searchByTag', (tag?: string) => searchByTag(tag));
   const searchMemosDisposable = vscode.commands.registerCommand('vsmemo.searchMemos', searchMemos);
+  const migrateLinksDisposable = vscode.commands.registerCommand('vsmemo.migrateLinks', migrateLinks);
   const gitPullDisposable = vscode.commands.registerCommand('vsmemo.git.pull', () => gitPull(gitManager));
   const gitSyncDisposable = vscode.commands.registerCommand('vsmemo.git.sync', () => gitSync(gitManager));
 
@@ -175,6 +177,7 @@ export function activate(context: vscode.ExtensionContext) {
     showGraphDisposable,
     searchByTagDisposable,
     searchMemosDisposable,
+    migrateLinksDisposable,
     gitPullDisposable,
     gitSyncDisposable,
     treeView,
